@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Project Tracker · Oumoeurt M</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #080b12; --surface: #0d1117; --border: #161d2b;
+      --border-hover: #243044; --text: #cdd6e8; --muted: #4a5568;
+      --faint: #1a2235; --accent-blue: #38bdf8; --accent-purple: #a78bfa;
+      --accent-rose: #fb7185; --green: #10b981; --amber: #f59e0b;
+      --finops: #34d399; --slate: #64748b;
+    }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; min-height: 100vh; padding: 0 0 80px; }
+
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 40px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: rgba(8,11,18,0.92); backdrop-filter: blur(12px); z-index: 100; }
+    .nav-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 15px; color: var(--text); text-decoration: none; }
+    .nav-logo span { color: var(--accent-blue); }
+    .nav-back { font-size: 11px; color: var(--muted); text-decoration: none; letter-spacing: 0.1em; text-transform: uppercase; transition: color 0.2s; display: flex; align-items: center; gap: 6px; }
+    .nav-back:hover { color: var(--text); }
+    .nav-back::before { content: '←'; font-size: 13px; }
+
+    .header { max-width: 900px; margin: 60px auto 48px; padding: 0 24px; animation: fadeUp 0.5s ease both; }
+    .header-label { font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--accent-blue); margin-bottom: 14px; }
+    h1 { font-family: 'Syne', sans-serif; font-size: clamp(32px, 6vw, 56px); font-weight: 800; line-height: 1.05; background: linear-gradient(135deg, #e2e8f0 0%, #64748b 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 14px; }
+    .header-sub { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    .progress-card { max-width: 900px; margin: 0 auto 36px; padding: 0 24px; animation: fadeUp 0.5s 0.1s ease both; }
+    .progress-inner { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px 28px; }
+    .progress-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
+    .progress-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); font-family: 'Syne', sans-serif; font-weight: 700; }
+    .progress-pct { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; color: var(--green); }
+    .progress-bar-bg { background: var(--faint); border-radius: 4px; height: 5px; overflow: hidden; margin-bottom: 20px; }
+    .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent-blue), var(--green)); border-radius: 4px; transition: width 0.7s cubic-bezier(0.16,1,0.3,1); }
+    .progress-stats { display: flex; gap: 28px; flex-wrap: wrap; }
+    .stat { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted); }
+    .stat-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+    .category-tabs { max-width: 900px; margin: 0 auto 12px; padding: 0 24px; display: flex; gap: 8px; flex-wrap: wrap; animation: fadeUp 0.5s 0.12s ease both; }
+    .cat-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 7px; padding: 7px 14px; font-size: 11px; cursor: pointer; font-family: 'DM Mono', monospace; letter-spacing: 0.04em; transition: all 0.18s; display: flex; align-items: center; gap: 6px; }
+    .cat-btn:hover { border-color: var(--border-hover); color: var(--text); }
+    .cat-btn.active { background: var(--faint); border-color: var(--border-hover); color: var(--text); }
+    .cat-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+
+    .filters { max-width: 900px; margin: 0 auto 32px; padding: 0 24px; display: flex; gap: 8px; flex-wrap: wrap; animation: fadeUp 0.5s 0.15s ease both; }
+    .filter-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 7px; padding: 7px 14px; font-size: 11px; cursor: pointer; font-family: 'DM Mono', monospace; letter-spacing: 0.04em; transition: all 0.18s; display: flex; align-items: center; gap: 6px; }
+    .filter-btn:hover { border-color: var(--border-hover); color: var(--text); }
+    .filter-btn.active { background: var(--faint); border-color: var(--border-hover); color: var(--text); }
+
+    .tier-section { max-width: 900px; margin: 0 auto 40px; padding: 0 24px; animation: fadeUp 0.5s ease both; }
+    .tier-header { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; cursor: pointer; user-select: none; padding: 4px 0; }
+    .tier-num { font-family: 'Syne', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; opacity: 0.4; }
+    .tier-name { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
+    .tier-divider { flex: 1; height: 1px; }
+    .tier-count { font-size: 11px; color: var(--muted); }
+    .tier-toggle { font-size: 10px; color: var(--muted); transition: transform 0.2s; }
+    .tier-toggle.collapsed { transform: rotate(-90deg); }
+
+    .cards { display: flex; flex-direction: column; gap: 10px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: 18px 20px; display: flex; align-items: flex-start; gap: 16px; transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s; border-left-width: 3px; }
+    .card:hover { transform: translateY(-2px); border-color: var(--border-hover); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+    .card.done { opacity: 0.55; }
+
+    .status-badge { flex-shrink: 0; border-radius: 7px; padding: 5px 11px; font-size: 10px; cursor: pointer; font-family: 'DM Mono', monospace; letter-spacing: 0.04em; border: 1px solid transparent; transition: opacity 0.18s, transform 0.1s; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+    .status-badge:hover { opacity: 0.8; transform: scale(0.97); }
+    .status-badge:active { transform: scale(0.93); }
+    .badge-dot { width: 5px; height: 5px; border-radius: 50%; display: inline-block; }
+
+    .card-body { flex: 1; min-width: 0; }
+    .card-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 5px; line-height: 1.3; }
+    .card-title.done-title { text-decoration: line-through; color: var(--muted); }
+    .card-desc { font-size: 12px; color: var(--muted); line-height: 1.55; margin-bottom: 12px; }
+    .card-tags { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .tag { font-size: 10px; border-radius: 5px; padding: 3px 8px; letter-spacing: 0.04em; font-family: 'DM Mono', monospace; }
+    .category-pill { font-size: 9px; border-radius: 4px; padding: 2px 7px; letter-spacing: 0.08em; font-family: 'Syne', sans-serif; font-weight: 700; text-transform: uppercase; }
+
+    .empty { text-align: center; padding: 60px 24px; color: var(--muted); font-size: 13px; }
+    footer { max-width: 900px; margin: 60px auto 0; padding: 24px 24px 0; border-top: 1px solid var(--border); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 11px; color: var(--border-hover); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 600px) { nav { padding: 16px 20px; } .card { flex-direction: column; gap: 10px; } .status-badge { align-self: flex-start; } }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">Oumoeurt<span>.</span>M</a>
+  <a href="index.html" class="nav-back">Home</a>
+</nav>
+
+<div class="header">
+  <div class="header-label">Cloud Engineering & FinOps Roadmap</div>
+  <h1>Project Tracker</h1>
+  <p class="header-sub">Click any status badge to cycle Planned → In Progress → Complete. Filter by category or status.</p>
+</div>
+
+<div class="progress-card">
+  <div class="progress-inner">
+    <div class="progress-top">
+      <span class="progress-label">Overall Progress</span>
+      <span class="progress-pct" id="pct">0%</span>
+    </div>
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="bar" style="width:0%"></div></div>
+    <div class="progress-stats">
+      <div class="stat"><div class="stat-dot" style="background:#64748b;box-shadow:0 0 5px #64748b"></div><span id="count-planned">0 Planned</span></div>
+      <div class="stat"><div class="stat-dot" style="background:#f59e0b;box-shadow:0 0 5px #f59e0b"></div><span id="count-inprogress">0 In Progress</span></div>
+      <div class="stat"><div class="stat-dot" style="background:#10b981;box-shadow:0 0 5px #10b981"></div><span id="count-complete">0 Complete</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="category-tabs" id="category-tabs">
+  <button class="cat-btn active" data-cat="All">All Projects</button>
+  <button class="cat-btn" data-cat="AWS"><span class="cat-dot" style="background:#38bdf8"></span>AWS / Cloud</button>
+  <button class="cat-btn" data-cat="FinOps"><span class="cat-dot" style="background:#34d399"></span>FinOps</button>
+</div>
+
+<div class="filters" id="filters">
+  <button class="filter-btn active" data-filter="All">All Statuses</button>
+  <button class="filter-btn" data-filter="Planned">📋 Planned</button>
+  <button class="filter-btn" data-filter="In Progress">🔄 In Progress</button>
+  <button class="filter-btn" data-filter="Complete">✅ Complete</button>
+</div>
+
+<div id="tiers"></div>
+
+<footer>
+  <span>oumoeurt.m.m@gmail.com</span>
+  <span>linkedin.com/in/ommousa</span>
+</footer>
+
+<script>
+const DATA = [
+  {
+    tier: "Beginner", accent: "#38bdf8", num: "01",
+    projects: [
+      { id: 1,  category: "AWS",    title: "Static Website Hosting on Cloud",          desc: "Host a simple static website (HTML/CSS) using AWS S3.",                                                       tags: ["AWS","S3","HTML/CSS"] },
+      { id: 2,  category: "AWS",    title: "Serverless Email/SMS Notification",         desc: "Build a static site + serverless backend to trigger email or SMS notifications.",                            tags: ["AWS","Lambda","SNS"] },
+      { id: 3,  category: "AWS",    title: "Simple Cloud Infrastructure (Network + VM)", desc: "Deploy a VM + network setup in the cloud; connect via SSH, set up Linux.",                                 tags: ["AWS","VPC","Linux"] },
+      { id: 10, category: "FinOps", title: "AWS Cost Explorer Dashboard",               desc: "Set up Cost Explorer, create custom cost reports, and build a spending dashboard broken down by service.",  tags: ["FinOps","Cost Explorer","AWS"] },
+      { id: 11, category: "FinOps", title: "Budget Alerts & Anomaly Detection",         desc: "Configure AWS Budgets with threshold alerts and enable Cost Anomaly Detection to catch unexpected spend.",  tags: ["FinOps","AWS Budgets","Anomaly Detection"] },
+    ]
+  },
+  {
+    tier: "Intermediate", accent: "#a78bfa", num: "02",
+    projects: [
+      { id: 4,  category: "AWS",    title: "3-Tier Web Application with IaC",           desc: "Build a 3-tier web app (web + app + database) using Terraform/CloudFormation.",                            tags: ["Terraform","AWS","IaC"] },
+      { id: 5,  category: "AWS",    title: "Cloud Security Audit Tool",                 desc: "Develop scripts/tools that scan cloud accounts for unused roles, credential usage, and encryption.",        tags: ["Python","AWS","Security"] },
+      { id: 6,  category: "AWS",    title: "Technical Project Delivery – Cloud Migration", desc: "Lead the migration of on-premises infrastructure to cloud; manage scope, timeline, and stakeholders.",   tags: ["Project Mgmt","AWS","Migration"] },
+      { id: 12, category: "FinOps", title: "Resource Tagging & Governance Framework",   desc: "Design and enforce a tagging strategy across AWS resources using Tag Policies and AWS Config rules.",      tags: ["FinOps","Tagging","AWS Config"] },
+      { id: 13, category: "FinOps", title: "Cloud Waste Identification Tool",           desc: "Build a Python script that scans for idle EC2s, unattached EBS volumes, old snapshots, and unused EIPs.", tags: ["FinOps","Python","AWS","Cost Optimization"] },
+      { id: 14, category: "FinOps", title: "Reserved Instances & Savings Plans Analysis", desc: "Analyze on-demand usage patterns and model RI/Savings Plans coverage to produce a cost reduction report.", tags: ["FinOps","RI","Savings Plans","Cost Analysis"] },
+    ]
+  },
+  {
+    tier: "Advanced", accent: "#fb7185", num: "03",
+    projects: [
+      { id: 7,  category: "AWS",    title: "Real-Time Data Pipeline & Analytics",       desc: "Build a streaming data pipeline: ingestion → process → analytics/dashboard.",                              tags: ["AWS","Kinesis","Analytics"] },
+      { id: 8,  category: "AWS",    title: "Hybrid/Multicloud Architecture Design",     desc: "Design a solution spanning on-premises + multi-cloud with secure connectivity and failover.",              tags: ["AWS","Terraform","Architecture"] },
+      { id: 9,  category: "AWS",    title: "Advanced Cloud Security & Automation Platform", desc: "Full automation platform: IaC + policy-as-code + monitoring + alerting + remediation.",               tags: ["Security","IaC","Automation"] },
+      { id: 15, category: "FinOps", title: "FinOps Cost Monitoring & Reporting Platform", desc: "Build a full cost visibility platform: pull AWS Cost & Usage Reports, process with Lambda, and visualize in QuickSight.", tags: ["FinOps","CUR","Lambda","QuickSight"] },
+    ]
+  }
+];
+
+const STATUS_ORDER = ["Planned", "In Progress", "Complete"];
+const STATUS_STYLE = {
+  "Planned":     { color: "#64748b", bg: "rgba(100,116,139,0.1)",  border: "rgba(100,116,139,0.25)" },
+  "In Progress": { color: "#f59e0b", bg: "rgba(245,158,11,0.1)",   border: "rgba(245,158,11,0.25)"  },
+  "Complete":    { color: "#10b981", bg: "rgba(16,185,129,0.1)",   border: "rgba(16,185,129,0.25)"  },
+};
+const CATEGORY_STYLE = {
+  "AWS":    { color: "#38bdf8", bg: "rgba(56,189,248,0.08)",  border: "rgba(56,189,248,0.2)"  },
+  "FinOps": { color: "#34d399", bg: "rgba(52,211,153,0.08)",  border: "rgba(52,211,153,0.2)"  },
+};
+
+const statuses = {};
+DATA.forEach(t => t.projects.forEach(p => statuses[p.id] = "Planned"));
+const collapsed = { Beginner: false, Intermediate: false, Advanced: false };
+let activeFilter = "All";
+let activeCategory = "All";
+
+function cycleStatus(id) {
+  const i = STATUS_ORDER.indexOf(statuses[id]);
+  statuses[id] = STATUS_ORDER[(i + 1) % STATUS_ORDER.length];
+  render();
+}
+
+function allProjects() { return DATA.flatMap(t => t.projects); }
+
+function updateProgress() {
+  const all = allProjects();
+  const done = all.filter(p => statuses[p.id] === "Complete").length;
+  const pct = Math.round((done / all.length) * 100);
+  document.getElementById("pct").textContent = pct + "%";
+  document.getElementById("bar").style.width = pct + "%";
+  document.getElementById("count-planned").textContent    = all.filter(p => statuses[p.id] === "Planned").length + " Planned";
+  document.getElementById("count-inprogress").textContent = all.filter(p => statuses[p.id] === "In Progress").length + " In Progress";
+  document.getElementById("count-complete").textContent   = done + " Complete";
+}
+
+function render() {
+  updateProgress();
+  const container = document.getElementById("tiers");
+  container.innerHTML = "";
+  let anyVisible = false;
+
+  DATA.forEach((tierData, ti) => {
+    const { tier, accent, num, projects } = tierData;
+    let visible = projects;
+    if (activeCategory !== "All") visible = visible.filter(p => p.category === activeCategory);
+    if (activeFilter !== "All")   visible = visible.filter(p => statuses[p.id] === activeFilter);
+    if (visible.length === 0) return;
+    anyVisible = true;
+
+    const doneCount = projects.filter(p => statuses[p.id] === "Complete").length;
+    const section = document.createElement("div");
+    section.className = "tier-section";
+    section.style.animationDelay = (ti * 0.07) + "s";
+
+    const header = document.createElement("div");
+    header.className = "tier-header";
+    header.innerHTML = `
+      <span class="tier-num" style="color:${accent}">${num}</span>
+      <span class="tier-name" style="color:${accent}">${tier}</span>
+      <div class="tier-divider" style="background:${accent}22"></div>
+      <span class="tier-count">${doneCount}/${projects.length} done</span>
+      <span class="tier-toggle ${collapsed[tier] ? 'collapsed' : ''}">▼</span>
+    `;
+    header.addEventListener("click", () => { collapsed[tier] = !collapsed[tier]; render(); });
+    section.appendChild(header);
+
+    if (!collapsed[tier]) {
+      const cards = document.createElement("div");
+      cards.className = "cards";
+      visible.forEach(project => {
+        const status = statuses[project.id];
+        const ss = STATUS_STYLE[status];
+        const cs = CATEGORY_STYLE[project.category];
+        const isDone = status === "Complete";
+        const card = document.createElement("div");
+        card.className = "card" + (isDone ? " done" : "");
+        card.style.borderLeftColor = cs.color;
+        card.innerHTML = `
+          <button class="status-badge" data-id="${project.id}"
+            style="background:${ss.bg};border-color:${ss.border};color:${ss.color}">
+            <span class="badge-dot" style="background:${ss.color};box-shadow:0 0 4px ${ss.color}"></span>
+            ${status}
+          </button>
+          <div class="card-body">
+            <div class="card-title ${isDone ? 'done-title' : ''}">${project.title}</div>
+            <div class="card-desc">${project.desc}</div>
+            <div class="card-tags">
+              <span class="category-pill" style="color:${cs.color};background:${cs.bg};border:1px solid ${cs.border}">${project.category}</span>
+              ${project.tags.map(t => `<span class="tag" style="color:${accent};background:${accent}11;border:1px solid ${accent}22">${t}</span>`).join("")}
+            </div>
+          </div>
+        `;
+        card.querySelector(".status-badge").addEventListener("click", e => {
+          e.stopPropagation();
+          cycleStatus(parseInt(e.currentTarget.dataset.id));
+        });
+        cards.appendChild(card);
+      });
+      section.appendChild(cards);
+    }
+    container.appendChild(section);
+  });
+
+  if (!anyVisible) container.innerHTML = `<div class="empty">No projects match this filter.</div>`;
+  document.querySelectorAll(".filter-btn").forEach(b => b.classList.toggle("active", b.dataset.filter === activeFilter));
+  document.querySelectorAll(".cat-btn").forEach(b => b.classList.toggle("active", b.dataset.cat === activeCategory));
+}
+
+document.getElementById("filters").addEventListener("click", e => {
+  const btn = e.target.closest(".filter-btn"); if (!btn) return;
+  activeFilter = btn.dataset.filter; render();
+});
+document.getElementById("category-tabs").addEventListener("click", e => {
+  const btn = e.target.closest(".cat-btn"); if (!btn) return;
+  activeCategory = btn.dataset.cat; render();
+});
+
+render();
+</script>
+</body>
+</html>
