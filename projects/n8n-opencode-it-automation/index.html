@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>n8n + OpenCode IT Automation</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --card: #21263a;
+      --border: #2e3450;
+      --accent: #6366f1;
+      --accent2: #22d3ee;
+      --accent3: #a78bfa;
+      --green: #34d399;
+      --yellow: #fbbf24;
+      --red: #f87171;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.6; }
+
+    header {
+      background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 60%, #0c4a6e 100%);
+      padding: 60px 40px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+    header h1 { font-size: 2.4rem; font-weight: 700; background: linear-gradient(90deg, #818cf8, #22d3ee); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    header p { color: var(--muted); margin-top: 12px; font-size: 1.1rem; max-width: 700px; margin-left: auto; margin-right: auto; }
+    .badge { display: inline-block; background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 4px 14px; font-size: 0.8rem; color: var(--accent2); margin: 6px 4px; }
+
+    nav { display: flex; justify-content: center; gap: 8px; padding: 20px; background: var(--surface); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    nav a { color: var(--muted); text-decoration: none; padding: 8px 18px; border-radius: 8px; font-size: 0.9rem; border: 1px solid var(--border); transition: all 0.2s; }
+    nav a:hover { color: var(--text); border-color: var(--accent); background: var(--card); }
+
+    main { max-width: 1200px; margin: 0 auto; padding: 40px 24px; }
+    section { margin-bottom: 60px; }
+    h2 { font-size: 1.5rem; color: var(--accent2); margin-bottom: 24px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 1.1rem; color: var(--accent3); margin-bottom: 12px; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    @media (max-width: 768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+    .card.accent-border { border-left: 3px solid var(--accent); }
+    .card.green-border  { border-left: 3px solid var(--green); }
+    .card.yellow-border { border-left: 3px solid var(--yellow); }
+    .card.red-border    { border-left: 3px solid var(--red); }
+
+    .stat { text-align: center; }
+    .stat .number { font-size: 2.4rem; font-weight: 700; color: var(--accent2); }
+    .stat .label  { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+
+    .model-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    @media (max-width: 768px) { .model-grid { grid-template-columns: repeat(2, 1fr); } }
+    .model-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; text-align: center; }
+    .model-card .icon { font-size: 2rem; margin-bottom: 8px; }
+    .model-card .name { font-weight: 600; font-size: 0.95rem; }
+    .model-card .role { color: var(--muted); font-size: 0.8rem; margin-top: 4px; }
+
+    .mermaid { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; overflow-x: auto; }
+    .mermaid svg { max-width: 100%; }
+
+    .flow-step { display: flex; gap: 16px; margin-bottom: 16px; align-items: flex-start; }
+    .step-num { background: var(--accent); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; margin-top: 2px; }
+    .step-content .step-title { font-weight: 600; margin-bottom: 4px; }
+    .step-content .step-desc { color: var(--muted); font-size: 0.88rem; }
+    .step-connector { width: 1px; height: 16px; background: var(--border); margin-left: 13px; }
+
+    .tag { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: 0.78rem; font-weight: 600; margin: 2px; }
+    .tag.blue   { background: #1e3a5f; color: #60a5fa; }
+    .tag.purple { background: #2d1b69; color: #a78bfa; }
+    .tag.cyan   { background: #0c3a4a; color: #22d3ee; }
+    .tag.green  { background: #052e16; color: #34d399; }
+    .tag.yellow { background: #3d2000; color: #fbbf24; }
+    .tag.red    { background: #3d0000; color: #f87171; }
+
+    .chart-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+    canvas { max-height: 280px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th { background: var(--surface); color: var(--accent2); padding: 12px 16px; text-align: left; border-bottom: 2px solid var(--border); }
+    td { padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--muted); }
+    td:first-child { color: var(--text); font-weight: 500; }
+    tr:hover td { background: var(--surface); }
+
+    .hire-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+    .hire-card .name { font-size: 1.1rem; font-weight: 600; }
+    .hire-card .meta { color: var(--muted); font-size: 0.85rem; margin: 4px 0 12px; }
+    .hire-card .tags { margin-top: 8px; }
+
+    footer { text-align: center; padding: 40px; color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--border); }
+    footer a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>n8n + OpenCode IT Automation</h1>
+  <p>Multi-model AI orchestration for provisioning, access control, and cloud operations — powered by Claude Code, Gemini, Grok, and Perplexity through OpenCode.</p>
+  <div style="margin-top:20px">
+    <span class="badge">n8n Workflows</span>
+    <span class="badge">OpenCode</span>
+    <span class="badge">Claude Code</span>
+    <span class="badge">Okta</span>
+    <span class="badge">Microsoft Entra</span>
+    <span class="badge">AWS · Azure · GCP</span>
+  </div>
+</header>
+
+<nav>
+  <a href="#overview">Overview</a>
+  <a href="#models">AI Models</a>
+  <a href="#provisioning">New Hire Flow</a>
+  <a href="#access">Access Requests</a>
+  <a href="#ops">Ops Monitoring</a>
+  <a href="#metrics">Metrics</a>
+  <a href="#sample-hires">Sample Hires</a>
+</nav>
+
+<main>
+
+  <!-- STATS -->
+  <section id="overview">
+    <h2>System Overview</h2>
+    <div class="grid-3" style="margin-bottom:24px">
+      <div class="card stat"><div class="number">4</div><div class="label">AI Models Orchestrated</div></div>
+      <div class="card stat"><div class="number">3</div><div class="label">Core Workflow Automations</div></div>
+      <div class="card stat"><div class="number">~50%</div><div class="label">Reduction in Manual IT Toil</div></div>
+    </div>
+
+    <div class="card">
+      <h3>Architecture at a Glance</h3>
+      <div class="mermaid" style="margin-top:16px">
+graph LR
+    A[HRIS / ITSM / Slack\nTrigger] --> B[n8n\nOrchestrator]
+    B --> C[OpenCode\nMulti-Model Brain]
+    C --> D[Claude Code\nScript Generation]
+    C --> E[Gemini\nPolicy Reasoning]
+    C --> F[Grok\nOps Analysis]
+    C --> G[Perplexity\nResearch & Docs]
+    B --> H[Okta\nIAM]
+    B --> I[Microsoft Entra\nIdentity]
+    B --> J[AWS · Azure · GCP\nCloud IAM]
+    B --> K[Slack\nNotifications]
+    style A fill:#1e3a5f,stroke:#60a5fa,color:#e2e8f0
+    style B fill:#2d1b69,stroke:#a78bfa,color:#e2e8f0
+    style C fill:#0c3a4a,stroke:#22d3ee,color:#e2e8f0
+    style D fill:#052e16,stroke:#34d399,color:#e2e8f0
+    style E fill:#052e16,stroke:#34d399,color:#e2e8f0
+    style F fill:#052e16,stroke:#34d399,color:#e2e8f0
+    style G fill:#052e16,stroke:#34d399,color:#e2e8f0
+    style H fill:#3d2000,stroke:#fbbf24,color:#e2e8f0
+    style I fill:#3d2000,stroke:#fbbf24,color:#e2e8f0
+    style J fill:#3d2000,stroke:#fbbf24,color:#e2e8f0
+    style K fill:#1e1e1e,stroke:#94a3b8,color:#e2e8f0
+      </div>
+    </div>
+  </section>
+
+  <!-- AI MODELS -->
+  <section id="models">
+    <h2>AI Model Roles</h2>
+    <div class="model-grid">
+      <div class="model-card">
+        <div class="icon">🤖</div>
+        <div class="name">Claude Code</div>
+        <div class="role">Script generation · PowerShell · Bash · Python automation</div>
+      </div>
+      <div class="model-card">
+        <div class="icon">🌀</div>
+        <div class="name">Gemini</div>
+        <div class="role">Policy reasoning · Entitlement decisions · Runbook drafting</div>
+      </div>
+      <div class="model-card">
+        <div class="icon">⚡</div>
+        <div class="name">Grok</div>
+        <div class="role">Real-time ops · Anomaly detection · Cloud monitoring analysis</div>
+      </div>
+      <div class="model-card">
+        <div class="icon">🔍</div>
+        <div class="name">Perplexity</div>
+        <div class="role">Rapid research · Compliance lookups · Incident diagnostics</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+      <h3>Agent → Model Routing</h3>
+      <table style="margin-top:12px">
+        <thead><tr><th>Agent</th><th>Primary Model</th><th>Use Case</th><th>n8n Output</th></tr></thead>
+        <tbody>
+          <tr><td>CoordinatorAgent</td><td><span class="tag cyan">Gemini</span><span class="tag blue">Perplexity</span></td><td>Entitlement decisions across Okta + Entra</td><td>JSON provisioning plan</td></tr>
+          <tr><td>CodeAgent</td><td><span class="tag green">Claude Code</span></td><td>Generate PowerShell / Bash / Python scripts</td><td>Script string → SSH/Command node</td></tr>
+          <tr><td>PolicyAgent</td><td><span class="tag cyan">Gemini</span><span class="tag blue">Perplexity</span></td><td>Access request evaluation vs zero-trust policy</td><td>Decision + entitlements JSON</td></tr>
+          <tr><td>RunbookAgent</td><td><span class="tag cyan">Gemini</span></td><td>Auto-generate Markdown runbook entries</td><td>Markdown → Confluence / Git</td></tr>
+          <tr><td>OpsAgent</td><td><span class="tag yellow">Grok</span></td><td>Cloud metric anomaly detection</td><td>Anomaly list + severity + runbook ref</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- NEW HIRE PROVISIONING -->
+  <section id="provisioning">
+    <h2>Workflow 1 — New Hire Provisioning</h2>
+    <div class="grid-2">
+      <div>
+        <div class="mermaid">
+flowchart TD
+    A([HRIS Webhook]) --> B[Normalize Payload]
+    B --> C[OpenCode\nCoordinatorAgent]
+    C --> D{Valid JSON Plan?}
+    D -- No --> E[Flag: Manual Review\nSlack #it-alerts]
+    D -- Yes --> F{High-Risk Role?}
+    F -- Yes --> G[Send Approval\nSlack #it-approvals]
+    G --> H[Wait for Approval]
+    H --> I
+    F -- No --> I[Loop: Apply\nOkta Actions]
+    I --> J[Loop: Apply\nEntra Actions]
+    J --> K[OpenCode\nRunbookAgent]
+    K --> L[Notify: Complete\nSlack #it-ops]
+    style A fill:#1e3a5f,stroke:#60a5fa,color:#e2e8f0
+    style C fill:#0c3a4a,stroke:#22d3ee,color:#e2e8f0
+    style K fill:#0c3a4a,stroke:#22d3ee,color:#e2e8f0
+    style E fill:#3d0000,stroke:#f87171,color:#e2e8f0
+    style L fill:#052e16,stroke:#34d399,color:#e2e8f0
+        </div>
+      </div>
+      <div>
+        <div class="card green-border" style="margin-bottom:16px">
+          <h3>Step-by-Step</h3>
+          <div style="margin-top:12px">
+            <div class="flow-step"><div class="step-num">1</div><div class="step-content"><div class="step-title">HRIS Webhook</div><div class="step-desc">Receives new hire payload from Workday, BambooHR, or any HRIS</div></div></div>
+            <div class="step-connector"></div>
+            <div class="flow-step"><div class="step-num">2</div><div class="step-content"><div class="step-title">Normalize Payload</div><div class="step-desc">Maps HRIS fields → structured newHireEvent JSON with cloudProfile</div></div></div>
+            <div class="step-connector"></div>
+            <div class="flow-step"><div class="step-num">3</div><div class="step-content"><div class="step-title">CoordinatorAgent (OpenCode)</div><div class="step-desc">Gemini/Perplexity decide entitlements. Claude Code generates any needed scripts. Returns strict JSON plan.</div></div></div>
+            <div class="step-connector"></div>
+            <div class="flow-step"><div class="step-num">4</div><div class="step-content"><div class="step-title">Validate + Risk Gate</div><div class="step-desc">JSON schema check → if high-risk role, require manager approval via Slack</div></div></div>
+            <div class="step-connector"></div>
+            <div class="flow-step"><div class="step-num">5</div><div class="step-content"><div class="step-title">Apply Okta + Entra</div><div class="step-desc">Loop over oktaActions[] and entraActions[] via native n8n nodes</div></div></div>
+            <div class="step-connector"></div>
+            <div class="flow-step"><div class="step-num">6</div><div class="step-content"><div class="step-title">RunbookAgent</div><div class="step-desc">Auto-generates Markdown runbook with verification and rollback steps</div></div></div>
+          </div>
+        </div>
+        <div class="card accent-border">
+          <h3>Key Variables</h3>
+          <table style="margin-top:8px;font-size:0.82rem">
+            <tr><td><code>OPENCODE_URL</code></td><td>Your OpenCode server endpoint</td></tr>
+            <tr><td><code>OPENCODE_API_KEY</code></td><td>OpenCode auth token</td></tr>
+            <tr><td><code>OKTA_DOMAIN</code></td><td>your-org.okta.com</td></tr>
+            <tr><td><code>OKTA_API_TOKEN</code></td><td>Okta SSWS token</td></tr>
+            <tr><td><code>ENTRA_ACCESS_TOKEN</code></td><td>Microsoft Graph Bearer token</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACCESS REQUEST -->
+  <section id="access">
+    <h2>Workflow 2 — Access Request Decision</h2>
+    <div class="grid-2">
+      <div>
+        <div class="mermaid">
+flowchart TD
+    A([Slack Command\nor ITSM Ticket]) --> B[Extract Request Context]
+    B --> C[OpenCode\nPolicyAgent]
+    C --> D[Parse Decision JSON]
+    D --> E{Route Decision}
+    E -- auto_grant --> F[Apply Access\nOkta + Entra]
+    F --> G[Notify: Granted ✅]
+    E -- needs_approval --> H[Send to Manager\nSlack]
+    H --> I[Wait for Decision]
+    I --> J[Apply Approved Access]
+    E -- deny --> K[Notify: Denied ❌\nwith reason]
+    G --> L[RunbookAgent\nAudit Log]
+    J --> L
+    K --> L
+    style A fill:#1e3a5f,stroke:#60a5fa,color:#e2e8f0
+    style C fill:#0c3a4a,stroke:#22d3ee,color:#e2e8f0
+    style L fill:#0c3a4a,stroke:#22d3ee,color:#e2e8f0
+    style G fill:#052e16,stroke:#34d399,color:#e2e8f0
+    style K fill:#3d0000,stroke:#f87171,color:#e2e8f0
+        </div>
+      </div>
+      <div>
+        <div class="card yellow-border" style="margin-bottom:16px">
+          <h3>Decision Logic</h3>
+          <div style="margin-top:12px">
+            <div style="margin-bottom:12px"><span class="tag green">auto_grant</span><div style="color:var(--muted);font-size:0.85rem;margin-top:4px">Low-risk, standard access matching user role. Applied immediately via Okta/Entra nodes.</div></div>
+            <div style="margin-bottom:12px"><span class="tag yellow">needs_approval</span><div style="color:var(--muted);font-size:0.85rem;margin-top:4px">Elevated permissions or cross-team access. Routes to manager via Slack with AI reasoning included.</div></div>
+            <div><span class="tag red">deny</span><div style="color:var(--muted);font-size:0.85rem;margin-top:4px">Violates least-privilege or zero-trust policy. Requester notified with specific reason from PolicyAgent.</div></div>
+          </div>
+        </div>
+        <div class="card accent-border">
+          <h3>PolicyAgent JSON Output</h3>
+          <pre style="font-size:0.78rem;color:var(--muted);overflow-x:auto;margin-top:8px">{
+  "decision": "needs_approval",
+  "reason": "IAM PowerUser exceeds role baseline",
+  "riskScore": 8,
+  "entitlements": {
+    "okta": ["grp_aws_prod_readonly"],
+    "entra": []
+  },
+  "expiresAt": "2026-03-18T00:00:00Z",
+  "escalateTo": "sarah.kim@company.com"
+}</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OPS MONITORING -->
+  <section id="ops">
+    <h2>Workflow 3 — Cloud Ops Monitoring (Grok)</h2>
+    <div class="mermaid">
+flowchart LR
+    A([Schedule Trigger\nevery 15 min]) --> B[AWS CloudWatch\nAzure Monitor\nGCP Logging]
+    B --> C[Compact Payload\nFunction Node]
+    C --> D[OpenCode\nOpsAgent — Grok]
+    D --> E{Anomaly Detected?}
+    E -- No --> F([Log: All Clear])
+    E -- Yes\nhigh/critical --> G[OpenCode\nRunbookAgent]
+    G --> H[Slack Alert\n#it-ops]
+    G --> I[Optional: Auto-run\nSafe Diagnostics\nvia Cloud Nodes]
+    style A fill:#1e3a5f,stroke:#60a5fa,color:#e2e8f0
+    style D fill:#0c3a4a,stroke:#22d3ee,color:#e2e8f0
+    style G fill:#0c3a4a,stroke:#22d3ee,color:#e2e8f0
+    style F fill:#052e16,stroke:#34d399,color:#e2e8f0
+    style H fill:#3d2000,stroke:#fbbf24,color:#e2e8f0
+    </div>
+  </section>
+
+  <!-- METRICS -->
+  <section id="metrics">
+    <h2>Impact Metrics</h2>
+    <div class="grid-2">
+      <div class="chart-wrap">
+        <h3 style="margin-bottom:16px">Time Saved per Workflow (minutes)</h3>
+        <canvas id="timeChart"></canvas>
+      </div>
+      <div class="chart-wrap">
+        <h3 style="margin-bottom:16px">Access Decision Breakdown</h3>
+        <canvas id="decisionChart"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- SAMPLE NEW HIRES -->
+  <section id="sample-hires">
+    <h2>Sample New Hire Payloads (Test Data)</h2>
+    <div class="grid-2">
+      <div class="hire-card">
+        <div class="name">Jordan Riley</div>
+        <div class="meta">EMP-20241 · Started 2026-03-16</div>
+        <div><span class="tag blue">Backend Engineer</span><span class="tag cyan">Engineering</span><span class="tag green">Standard Risk</span></div>
+        <div class="tags" style="margin-top:8px"><span class="tag purple">Remote - US West</span><span class="tag blue">AWS Primary</span></div>
+        <div style="color:var(--muted);font-size:0.82rem;margin-top:10px">Manager: sarah.kim@company.com</div>
+      </div>
+      <div class="hire-card">
+        <div class="name">Priya Nair</div>
+        <div class="meta">EMP-20242 · Started 2026-03-16</div>
+        <div><span class="tag purple">Security Analyst</span><span class="tag red">High Risk</span><span class="tag cyan">SecOps</span></div>
+        <div class="tags" style="margin-top:8px"><span class="tag purple">Remote - US East</span><span class="tag yellow">Approval Required</span></div>
+        <div style="color:var(--muted);font-size:0.82rem;margin-top:10px">Manager: james.wu@company.com</div>
+      </div>
+      <div class="hire-card">
+        <div class="name">Devon Okafor</div>
+        <div class="meta">EMP-20243 · Started 2026-03-23</div>
+        <div><span class="tag blue">DevOps Engineer</span><span class="tag cyan">Infrastructure</span><span class="tag yellow">Elevated Risk</span></div>
+        <div class="tags" style="margin-top:8px"><span class="tag purple">Hybrid - Austin TX</span><span class="tag blue">GCP Primary</span></div>
+        <div style="color:var(--muted);font-size:0.82rem;margin-top:10px">Manager: sarah.kim@company.com</div>
+      </div>
+      <div class="hire-card">
+        <div class="name">Mei-Ling Torres</div>
+        <div class="meta">EMP-20244 · Started 2026-03-23</div>
+        <div><span class="tag blue">Product Manager</span><span class="tag cyan">Product</span><span class="tag green">Standard Risk</span></div>
+        <div class="tags" style="margin-top:8px"><span class="tag purple">Remote - Chicago IL</span><span class="tag blue">Azure Primary</span></div>
+        <div style="color:var(--muted);font-size:0.82rem;margin-top:10px">Manager: alex.reed@company.com</div>
+      </div>
+    </div>
+    <div style="margin-top:20px">
+      <div class="card accent-border">
+        <h3>How to test</h3>
+        <pre style="font-size:0.82rem;color:var(--muted);margin-top:10px;overflow-x:auto">curl -X POST https://your-n8n-instance/webhook/new-hire \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "Jordan",
+    "lastName": "Riley",
+    "email": "j.riley@company.com",
+    "department": "Engineering",
+    "jobTitle": "Backend Engineer",
+    "managerEmail": "sarah.kim@company.com",
+    "startDate": "2026-03-16",
+    "location": "Remote - US West",
+    "employeeId": "EMP-20241",
+    "riskLevel": "standard"
+  }'</pre>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p>Built by <a href="https://github.com/oumoeurtmm-code">oumoeurtmm-code</a> · n8n + OpenCode + Claude Code + Gemini + Grok + Perplexity</p>
+  <p style="margin-top:6px"><a href="workflows/new-hire-provisioning.json">↓ New Hire Workflow JSON</a> &nbsp;|&nbsp; <a href="workflows/access-request.json">↓ Access Request Workflow JSON</a> &nbsp;|&nbsp; <a href="README.md">Architecture Docs</a></p>
+</footer>
+
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: { primaryColor: '#6366f1', primaryTextColor: '#e2e8f0', primaryBorderColor: '#4f46e5', lineColor: '#94a3b8', secondaryColor: '#1a1d27', tertiaryColor: '#21263a' } });
+
+  // Time saved chart
+  new Chart(document.getElementById('timeChart'), {
+    type: 'bar',
+    data: {
+      labels: ['New Hire\nProvisioning', 'Access\nRequest', 'Runbook\nGeneration', 'Ops\nMonitoring'],
+      datasets: [{
+        label: 'Manual (min)',
+        data: [90, 30, 45, 60],
+        backgroundColor: '#374151'
+      }, {
+        label: 'Automated (min)',
+        data: [8, 3, 2, 1],
+        backgroundColor: '#6366f1'
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { labels: { color: '#94a3b8' } } },
+      scales: {
+        x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e2535' } },
+        y: { ticks: { color: '#94a3b8' }, grid: { color: '#1e2535' } }
+      }
+    }
+  });
+
+  // Decision breakdown chart
+  new Chart(document.getElementById('decisionChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Auto Granted', 'Needs Approval', 'Denied'],
+      datasets: [{
+        data: [62, 28, 10],
+        backgroundColor: ['#34d399', '#fbbf24', '#f87171'],
+        borderColor: '#21263a',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { labels: { color: '#94a3b8' } } }
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,295 @@
+{
+  "name": "Access Request — AI Policy Decision via OpenCode",
+  "nodes": [
+    {
+      "id": "2a3b4c5d-0001",
+      "name": "Access Request Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "access-request",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "notes": "Receives access requests from Slack /access-request command, JIRA, or ITSM webhook"
+    },
+    {
+      "id": "2a3b4c5d-0002",
+      "name": "Extract Request Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300],
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\n\n// ── SAMPLE ACCESS REQUEST ─────────────────────────────────────────────\n// Requester:  Marcus Thompson (m.thompson@company.com)\n// System:     AWS Production Account — IAM PowerUser\n// Reason:     Need to investigate billing anomaly in prod\n// Duration:   Temporary (48 hours)\n// Manager:    sarah.kim@company.com\n// Ticket:     JIRA-4821\n// ─────────────────────────────────────────────────────────────────────\n\nconst request = {\n  requester: {\n    name:       raw.userName       || 'Marcus Thompson',\n    email:      raw.userEmail      || 'm.thompson@company.com',\n    department: raw.department     || 'Engineering',\n    role:       raw.userRole       || 'Backend Engineer'\n  },\n  access: {\n    system:     raw.system         || 'AWS Production Account',\n    permission: raw.permission     || 'IAM PowerUser',\n    duration:   raw.duration       || 'temporary-48h',\n    reason:     raw.reason         || 'Investigate billing anomaly in prod'\n  },\n  metadata: {\n    ticketId:   raw.ticketId       || 'JIRA-4821',\n    manager:    raw.managerEmail   || 'sarah.kim@company.com',\n    timestamp:  new Date().toISOString()\n  }\n};\n\nreturn [{ json: { request } }];"
+      }
+    },
+    {
+      "id": "2a3b4c5d-0003",
+      "name": "OpenCode — PolicyAgent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [680, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.OPENCODE_URL }}/api/agent/run",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Authorization", "value": "Bearer {{ $vars.OPENCODE_API_KEY }}" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "agent", "value": "PolicyAgent" },
+            { "name": "mode", "value": "plan-only" },
+            {
+              "name": "systemPrompt",
+              "value": "You are an IT security policy engine. Evaluate the access request against least-privilege and zero-trust principles. Output strict JSON with: decision (auto_grant | needs_approval | deny), reason (string), riskScore (1-10), entitlements { okta: [], entra: [] }, expiresAt (ISO string or null), and escalateTo (email or null). No commentary outside JSON."
+            },
+            {
+              "name": "task",
+              "value": "={{ JSON.stringify($json.request) }}"
+            }
+          ]
+        },
+        "notes": "PolicyAgent uses Gemini + Perplexity for policy reasoning and compliance evaluation"
+      }
+    },
+    {
+      "id": "2a3b4c5d-0004",
+      "name": "Parse Policy Decision",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300],
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nlet decision;\ntry {\n  const raw = response.result || response.content || response;\n  decision = typeof raw === 'string' ? JSON.parse(raw) : raw;\n} catch (e) {\n  decision = { decision: 'needs_approval', reason: 'AI parse error — manual review required', riskScore: 10 };\n}\nreturn [{ json: { decision } }];"
+      }
+    },
+    {
+      "id": "2a3b4c5d-0005",
+      "name": "Route Decision",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [1120, 300],
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": true },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.decision.decision }}",
+                    "rightValue": "auto_grant",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "auto_grant"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.decision.decision }}",
+                    "rightValue": "needs_approval",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "needs_approval"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.decision.decision }}",
+                    "rightValue": "deny",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "deny"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "2a3b4c5d-0006",
+      "name": "Apply Access — Okta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1340, 160],
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://{{ $vars.OKTA_DOMAIN }}/api/v1/groups/{{ $json.decision.entitlements.okta[0] }}/users/{{ $vars.OKTA_USER_ID }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "SSWS {{ $vars.OKTA_API_TOKEN }}" }
+          ]
+        },
+        "notes": "Loops over okta entitlements from AI decision and applies group memberships"
+      }
+    },
+    {
+      "id": "2a3b4c5d-0007",
+      "name": "Notify Requester — Granted",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [1560, 160],
+      "parameters": {
+        "channel": "={{ $('Extract Request Context').first().json.request.requester.email }}",
+        "text": "✅ *Access Granted*\n\n*System:* {{ $('Extract Request Context').first().json.request.access.system }}\n*Permission:* {{ $('Extract Request Context').first().json.request.access.permission }}\n*Expires:* {{ $('Parse Policy Decision').first().json.decision.expiresAt || 'Permanent' }}\n*Risk Score:* {{ $('Parse Policy Decision').first().json.decision.riskScore }}/10\n\n_Granted automatically per policy. Ticket: {{ $('Extract Request Context').first().json.request.metadata.ticketId }}_"
+      }
+    },
+    {
+      "id": "2a3b4c5d-0008",
+      "name": "Send Manager Approval",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [1340, 320],
+      "parameters": {
+        "channel": "#it-approvals",
+        "text": "🔐 *Access Request — Manager Approval Required*\n\n*Requester:* {{ $('Extract Request Context').first().json.request.requester.name }}\n*System:* {{ $('Extract Request Context').first().json.request.access.system }}\n*Permission:* {{ $('Extract Request Context').first().json.request.access.permission }}\n*Reason:* {{ $('Extract Request Context').first().json.request.access.reason }}\n*Risk Score:* {{ $('Parse Policy Decision').first().json.decision.riskScore }}/10\n*AI Reasoning:* {{ $('Parse Policy Decision').first().json.decision.reason }}\n*Ticket:* {{ $('Extract Request Context').first().json.request.metadata.ticketId }}\n\nApprove or deny by replying to the webhook or updating the JIRA ticket."
+      }
+    },
+    {
+      "id": "2a3b4c5d-0009",
+      "name": "Wait for Manager Decision",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1560, 320],
+      "parameters": {
+        "resume": "webhook",
+        "options": {}
+      }
+    },
+    {
+      "id": "2a3b4c5d-0010",
+      "name": "Apply Approved Access — Okta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1780, 320],
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://{{ $vars.OKTA_DOMAIN }}/api/v1/groups/{{ $('Parse Policy Decision').first().json.decision.entitlements.okta[0] }}/users/{{ $vars.OKTA_USER_ID }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "SSWS {{ $vars.OKTA_API_TOKEN }}" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "2a3b4c5d-0011",
+      "name": "Notify Requester — Denied",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [1340, 480],
+      "parameters": {
+        "channel": "={{ $('Extract Request Context').first().json.request.requester.email }}",
+        "text": "❌ *Access Request Denied*\n\n*System:* {{ $('Extract Request Context').first().json.request.access.system }}\n*Permission:* {{ $('Extract Request Context').first().json.request.access.permission }}\n*Reason:* {{ $('Parse Policy Decision').first().json.decision.reason }}\n*Risk Score:* {{ $('Parse Policy Decision').first().json.decision.riskScore }}/10\n\nIf you believe this is incorrect, please escalate to your manager or submit a new request with additional justification.\n*Ticket:* {{ $('Extract Request Context').first().json.request.metadata.ticketId }}"
+      }
+    },
+    {
+      "id": "2a3b4c5d-0012",
+      "name": "OpenCode — RunbookAgent Log",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [2000, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.OPENCODE_URL }}/api/agent/run",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Authorization", "value": "Bearer {{ $vars.OPENCODE_API_KEY }}" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "agent", "value": "RunbookAgent" },
+            { "name": "mode", "value": "explain-and-document" },
+            {
+              "name": "systemPrompt",
+              "value": "You are an IT audit documentation specialist. Log this access request decision as a structured audit entry in Markdown. Include: requester, system, decision, risk score, AI reasoning, and timestamp."
+            },
+            {
+              "name": "task",
+              "value": "=Access request from {{ $('Extract Request Context').first().json.request.requester.name }} for {{ $('Extract Request Context').first().json.request.access.system }} — {{ $('Extract Request Context').first().json.request.access.permission }}. Decision: {{ $('Parse Policy Decision').first().json.decision.decision }}. Reason: {{ $('Parse Policy Decision').first().json.decision.reason }}. Risk: {{ $('Parse Policy Decision').first().json.decision.riskScore }}/10. Ticket: {{ $('Extract Request Context').first().json.request.metadata.ticketId }}."
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Access Request Trigger": {
+      "main": [[{ "node": "Extract Request Context", "type": "main", "index": 0 }]]
+    },
+    "Extract Request Context": {
+      "main": [[{ "node": "OpenCode — PolicyAgent", "type": "main", "index": 0 }]]
+    },
+    "OpenCode — PolicyAgent": {
+      "main": [[{ "node": "Parse Policy Decision", "type": "main", "index": 0 }]]
+    },
+    "Parse Policy Decision": {
+      "main": [[{ "node": "Route Decision", "type": "main", "index": 0 }]]
+    },
+    "Route Decision": {
+      "main": [
+        [{ "node": "Apply Access — Okta", "type": "main", "index": 0 }],
+        [{ "node": "Send Manager Approval", "type": "main", "index": 0 }],
+        [{ "node": "Notify Requester — Denied", "type": "main", "index": 0 }]
+      ]
+    },
+    "Apply Access — Okta": {
+      "main": [[{ "node": "Notify Requester — Granted", "type": "main", "index": 0 }]]
+    },
+    "Notify Requester — Granted": {
+      "main": [[{ "node": "OpenCode — RunbookAgent Log", "type": "main", "index": 0 }]]
+    },
+    "Send Manager Approval": {
+      "main": [[{ "node": "Wait for Manager Decision", "type": "main", "index": 0 }]]
+    },
+    "Wait for Manager Decision": {
+      "main": [[{ "node": "Apply Approved Access — Okta", "type": "main", "index": 0 }]]
+    },
+    "Apply Approved Access — Okta": {
+      "main": [[{ "node": "OpenCode — RunbookAgent Log", "type": "main", "index": 0 }]]
+    },
+    "Notify Requester — Denied": {
+      "main": [[{ "node": "OpenCode — RunbookAgent Log", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "description": "Evaluates access requests using OpenCode PolicyAgent (Gemini + Perplexity). Routes to auto-grant, manager approval, or deny. Logs all decisions via RunbookAgent.",
+    "sampleRequest": {
+      "requester": "Marcus Thompson (m.thompson@company.com)",
+      "system": "AWS Production Account",
+      "permission": "IAM PowerUser",
+      "reason": "Investigate billing anomaly in prod",
+      "duration": "temporary-48h",
+      "ticket": "JIRA-4821"
+    }
+  }
+}

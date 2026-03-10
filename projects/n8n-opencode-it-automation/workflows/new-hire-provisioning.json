@@ -1,0 +1,364 @@
+{
+  "name": "New Hire Provisioning — Okta + Entra via OpenCode",
+  "nodes": [
+    {
+      "id": "1a2b3c4d-0001",
+      "name": "HRIS Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "new-hire",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "notes": "Receives new hire payload from your HRIS (Workday, BambooHR, etc.)"
+    },
+    {
+      "id": "1a2b3c4d-0002",
+      "name": "Normalize Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300],
+      "parameters": {
+        "jsCode": "// Sample incoming HRIS payload (replace with your actual field mapping)\nconst raw = $input.first().json;\n\n// ── SAMPLE NEW HIRE DATA ──────────────────────────────────────────────\n// Name:       Jordan Riley\n// Email:      j.riley@company.com\n// Dept:       Engineering\n// Role:       Backend Engineer\n// Manager:    sarah.kim@company.com\n// Start Date: 2026-03-16\n// Location:   Remote - US West\n// Risk Level: standard\n// ─────────────────────────────────────────────────────────────────────\n\nconst newHire = {\n  firstName:   raw.firstName    || 'Jordan',\n  lastName:    raw.lastName     || 'Riley',\n  email:       raw.email        || 'j.riley@company.com',\n  department:  raw.department   || 'Engineering',\n  role:        raw.jobTitle     || 'Backend Engineer',\n  manager:     raw.managerEmail || 'sarah.kim@company.com',\n  startDate:   raw.startDate    || '2026-03-16',\n  location:    raw.location     || 'Remote - US West',\n  employeeId:  raw.employeeId   || 'EMP-20241',\n  riskLevel:   raw.riskLevel    || 'standard',   // standard | elevated | high\n  cloudProfile: {\n    primaryCloud:   'aws',\n    defaultGroups:  ['eng-general', 'eng-backend'],\n    costCenter:     'ENG-001'\n  }\n};\n\nreturn [{ json: { newHire } }];"
+      }
+    },
+    {
+      "id": "1a2b3c4d-0003",
+      "name": "OpenCode — CoordinatorAgent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [680, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.OPENCODE_URL }}/api/agent/run",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Authorization", "value": "Bearer {{ $vars.OPENCODE_API_KEY }}" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "agent",
+              "value": "CoordinatorAgent"
+            },
+            {
+              "name": "mode",
+              "value": "plan-only"
+            },
+            {
+              "name": "systemPrompt",
+              "value": "You are an IT provisioning coordinator. Given a new hire profile, output a strict JSON provisioning plan with three arrays: oktaActions[], entraActions[], and cloudActions[]. Each action must include: actionType, target, reason. Apply least-privilege. Do NOT include any commentary outside the JSON."
+            },
+            {
+              "name": "task",
+              "value": "={{ JSON.stringify($json.newHire) }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "notes": "OpenCode fans out to Gemini/Perplexity for policy reasoning, Claude Code for script suggestions"
+    },
+    {
+      "id": "1a2b3c4d-0004",
+      "name": "Validate AI Plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300],
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\n\nlet plan;\ntry {\n  // OpenCode returns the plan inside response.result or response.content\n  const raw = response.result || response.content || response;\n  plan = typeof raw === 'string' ? JSON.parse(raw) : raw;\n} catch (e) {\n  return [{ json: { valid: false, error: 'Failed to parse AI plan: ' + e.message, raw: response } }];\n}\n\nconst hasOkta  = Array.isArray(plan.oktaActions);\nconst hasEntra = Array.isArray(plan.entraActions);\nconst hasCloud = Array.isArray(plan.cloudActions);\n\nif (!hasOkta || !hasEntra) {\n  return [{ json: { valid: false, error: 'Missing required arrays in plan', plan } }];\n}\n\nreturn [{ json: { valid: true, plan } }];"
+      }
+    },
+    {
+      "id": "1a2b3c4d-0005",
+      "name": "Valid Plan?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1120, 300],
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.valid }}",
+              "value2": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "1a2b3c4d-0006",
+      "name": "Flag for Manual Review",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [1340, 480],
+      "parameters": {
+        "channel": "#it-alerts",
+        "text": "⚠️ *New Hire Provisioning — Manual Review Required*\nEmployee: {{ $('Normalize Payload').first().json.newHire.firstName }} {{ $('Normalize Payload').first().json.newHire.lastName }}\nReason: AI plan validation failed\nError: {{ $json.error }}"
+      }
+    },
+    {
+      "id": "1a2b3c4d-0007",
+      "name": "High-Risk Role?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1340, 300],
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $('Normalize Payload').first().json.newHire.riskLevel }}",
+              "operation": "equal",
+              "value2": "high"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "1a2b3c4d-0008",
+      "name": "Send Approval Request",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [1560, 200],
+      "parameters": {
+        "channel": "#it-approvals",
+        "text": "🔐 *New Hire Provisioning — Manager Approval Required*\n\n*Employee:* {{ $('Normalize Payload').first().json.newHire.firstName }} {{ $('Normalize Payload').first().json.newHire.lastName }}\n*Role:* {{ $('Normalize Payload').first().json.newHire.role }}\n*Dept:* {{ $('Normalize Payload').first().json.newHire.department }}\n*Risk Level:* HIGH\n\nReply ✅ to approve or ❌ to deny."
+      }
+    },
+    {
+      "id": "1a2b3c4d-0009",
+      "name": "Wait for Approval",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1780, 200],
+      "parameters": {
+        "resume": "webhook",
+        "options": {}
+      }
+    },
+    {
+      "id": "1a2b3c4d-0010",
+      "name": "Loop Okta Actions",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1560, 380],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "1a2b3c4d-0011",
+      "name": "Apply Okta Action",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1780, 380],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://{{ $vars.OKTA_DOMAIN }}/api/v1/users",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "SSWS {{ $vars.OKTA_API_TOKEN }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "profile",
+              "value": "={{ { firstName: $('Normalize Payload').first().json.newHire.firstName, lastName: $('Normalize Payload').first().json.newHire.lastName, email: $('Normalize Payload').first().json.newHire.email, login: $('Normalize Payload').first().json.newHire.email, department: $('Normalize Payload').first().json.newHire.department } }}"
+            }
+          ]
+        },
+        "notes": "Applies each oktaAction from the AI plan. Extend with group assignment calls as needed."
+      }
+    },
+    {
+      "id": "1a2b3c4d-0012",
+      "name": "Loop Entra Actions",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1560, 520],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "1a2b3c4d-0013",
+      "name": "Apply Entra Action",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1780, 520],
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.microsoft.com/v1.0/users",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer {{ $vars.ENTRA_ACCESS_TOKEN }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "displayName",
+              "value": "={{ $('Normalize Payload').first().json.newHire.firstName + ' ' + $('Normalize Payload').first().json.newHire.lastName }}"
+            },
+            {
+              "name": "mailNickname",
+              "value": "={{ $('Normalize Payload').first().json.newHire.firstName.toLowerCase() + '.' + $('Normalize Payload').first().json.newHire.lastName.toLowerCase() }}"
+            },
+            {
+              "name": "userPrincipalName",
+              "value": "={{ $('Normalize Payload').first().json.newHire.email }}"
+            },
+            {
+              "name": "accountEnabled",
+              "value": "true"
+            },
+            {
+              "name": "passwordProfile",
+              "value": "={{ { forceChangePasswordNextSignIn: true, password: $vars.ENTRA_TEMP_PASSWORD } }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "1a2b3c4d-0014",
+      "name": "OpenCode — RunbookAgent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [2000, 440],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.OPENCODE_URL }}/api/agent/run",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Authorization", "value": "Bearer {{ $vars.OPENCODE_API_KEY }}" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "agent", "value": "RunbookAgent" },
+            { "name": "mode", "value": "explain-and-document" },
+            {
+              "name": "systemPrompt",
+              "value": "You are an IT documentation specialist. Given a provisioning summary, generate a concise runbook entry in Markdown including: what was provisioned, verification steps, and rollback steps."
+            },
+            {
+              "name": "task",
+              "value": "=New hire {{ $('Normalize Payload').first().json.newHire.firstName }} {{ $('Normalize Payload').first().json.newHire.lastName }} provisioned. Role: {{ $('Normalize Payload').first().json.newHire.role }}. Dept: {{ $('Normalize Payload').first().json.newHire.department }}. Okta and Entra accounts created. Generate runbook entry."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "1a2b3c4d-0015",
+      "name": "Notify — Provisioning Complete",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [2220, 440],
+      "parameters": {
+        "channel": "#it-ops",
+        "text": "✅ *New Hire Provisioned Successfully*\n\n*Name:* {{ $('Normalize Payload').first().json.newHire.firstName }} {{ $('Normalize Payload').first().json.newHire.lastName }}\n*Role:* {{ $('Normalize Payload').first().json.newHire.role }}\n*Email:* {{ $('Normalize Payload').first().json.newHire.email }}\n*Start Date:* {{ $('Normalize Payload').first().json.newHire.startDate }}\n\nOkta ✅ | Entra ID ✅ | Runbook logged ✅"
+      }
+    }
+  ],
+  "connections": {
+    "HRIS Webhook Trigger": {
+      "main": [[{ "node": "Normalize Payload", "type": "main", "index": 0 }]]
+    },
+    "Normalize Payload": {
+      "main": [[{ "node": "OpenCode — CoordinatorAgent", "type": "main", "index": 0 }]]
+    },
+    "OpenCode — CoordinatorAgent": {
+      "main": [[{ "node": "Validate AI Plan", "type": "main", "index": 0 }]]
+    },
+    "Validate AI Plan": {
+      "main": [[{ "node": "Valid Plan?", "type": "main", "index": 0 }]]
+    },
+    "Valid Plan?": {
+      "main": [
+        [{ "node": "High-Risk Role?", "type": "main", "index": 0 }],
+        [{ "node": "Flag for Manual Review", "type": "main", "index": 0 }]
+      ]
+    },
+    "High-Risk Role?": {
+      "main": [
+        [{ "node": "Send Approval Request", "type": "main", "index": 0 }],
+        [{ "node": "Loop Okta Actions", "type": "main", "index": 0 }]
+      ]
+    },
+    "Send Approval Request": {
+      "main": [[{ "node": "Wait for Approval", "type": "main", "index": 0 }]]
+    },
+    "Wait for Approval": {
+      "main": [[{ "node": "Loop Okta Actions", "type": "main", "index": 0 }]]
+    },
+    "Loop Okta Actions": {
+      "main": [
+        [{ "node": "Apply Okta Action", "type": "main", "index": 0 }],
+        [{ "node": "Loop Entra Actions", "type": "main", "index": 0 }]
+      ]
+    },
+    "Apply Okta Action": {
+      "main": [[{ "node": "Loop Okta Actions", "type": "main", "index": 0 }]]
+    },
+    "Loop Entra Actions": {
+      "main": [
+        [{ "node": "Apply Entra Action", "type": "main", "index": 0 }],
+        [{ "node": "OpenCode — RunbookAgent", "type": "main", "index": 0 }]
+      ]
+    },
+    "Apply Entra Action": {
+      "main": [[{ "node": "Loop Entra Actions", "type": "main", "index": 0 }]]
+    },
+    "OpenCode — RunbookAgent": {
+      "main": [[{ "node": "Notify — Provisioning Complete", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "description": "Automates new hire provisioning across Okta and Microsoft Entra ID using OpenCode as the multi-model AI brain (Claude Code, Gemini, Grok, Perplexity). Includes high-risk approval gate, AI plan validation, and auto-generated runbook.",
+    "sampleNewHire": {
+      "name": "Jordan Riley",
+      "email": "j.riley@company.com",
+      "department": "Engineering",
+      "role": "Backend Engineer",
+      "manager": "sarah.kim@company.com",
+      "startDate": "2026-03-16",
+      "location": "Remote - US West",
+      "employeeId": "EMP-20241",
+      "riskLevel": "standard"
+    }
+  }
+}
