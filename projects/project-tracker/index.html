@@ -118,6 +118,7 @@
   <button class="cat-btn active" data-cat="All">All Projects</button>
   <button class="cat-btn" data-cat="AWS"><span class="cat-dot" style="background:#38bdf8"></span>AWS / Cloud</button>
   <button class="cat-btn" data-cat="FinOps"><span class="cat-dot" style="background:#34d399"></span>FinOps</button>
+  <button class="cat-btn" data-cat="IT Automation"><span class="cat-dot" style="background:#f472b6"></span>IT Automation</button>
 </div>
 
 <div class="filters" id="filters">
@@ -139,31 +140,33 @@ const DATA = [
   {
     tier: "Beginner", accent: "#38bdf8", num: "01",
     projects: [
-      { id: 1,  category: "AWS",    title: "Static Website Hosting on Cloud",          desc: "Host a simple static website (HTML/CSS) using AWS S3.",                                                       tags: ["AWS","S3","HTML/CSS"] },
-      { id: 2,  category: "AWS",    title: "Serverless Email/SMS Notification",         desc: "Build a static site + serverless backend to trigger email or SMS notifications.",                            tags: ["AWS","Lambda","SNS"] },
-      { id: 3,  category: "AWS",    title: "Simple Cloud Infrastructure (Network + VM)", desc: "Deploy a VM + network setup in the cloud; connect via SSH, set up Linux.",                                 tags: ["AWS","VPC","Linux"] },
-      { id: 10, category: "FinOps", title: "AWS Cost Explorer Dashboard",               desc: "Set up Cost Explorer, create custom cost reports, and build a spending dashboard broken down by service.",  tags: ["FinOps","Cost Explorer","AWS"] },
-      { id: 11, category: "FinOps", title: "Budget Alerts & Anomaly Detection",         desc: "Configure AWS Budgets with threshold alerts and enable Cost Anomaly Detection to catch unexpected spend.",  tags: ["FinOps","AWS Budgets","Anomaly Detection"] },
+      { id: 1,  category: "AWS",          title: "Lab 01 — S3 Static Website + CloudFront + IAM + CloudWatch", desc: "Host a static website on S3 with CloudFront CDN, OAC, IAM policies, access logging, and CloudWatch monitoring.", tags: ["AWS","S3","CloudFront","IAM","CloudWatch"], link: "https://github.com/oumoeurtmm-code/ai-terminal-workflow" },
+      { id: 2,  category: "AWS",          title: "Lab 02 — EC2 + VPC + Security Groups",                       desc: "Deploy a hardened EC2 instance in a custom VPC with public/private subnets, NAT Gateway, and SSM Session Manager — no open SSH.", tags: ["AWS","EC2","VPC","SSM","Security Groups"], link: "https://github.com/oumoeurtmm-code/ai-terminal-workflow" },
+      { id: 3,  category: "AWS",          title: "Lab 03 — RDS + EC2 Two-Tier App",                            desc: "Build a two-tier architecture with EC2 app server and RDS database in a private subnet. Secrets Manager for credentials.", tags: ["AWS","RDS","EC2","Secrets Manager"] },
+      { id: 16, category: "IT Automation",title: "n8n + OpenCode Multi-Model IT Automation",                   desc: "Orchestrate Claude Code, Gemini, Grok, and Perplexity via OpenCode + n8n for provisioning, access control, and cloud ops.", tags: ["n8n","OpenCode","Claude Code","Okta","Entra"], link: "https://oumoeurtmm-code.github.io/projects/n8n-opencode-it-automation/" },
+      { id: 10, category: "FinOps",       title: "AWS Cost Explorer Dashboard",                                desc: "Set up Cost Explorer, create custom cost reports, and build a spending dashboard broken down by service.",  tags: ["FinOps","Cost Explorer","AWS"] },
+      { id: 11, category: "FinOps",       title: "Budget Alerts & Anomaly Detection",                          desc: "Configure AWS Budgets with threshold alerts and enable Cost Anomaly Detection to catch unexpected spend.",  tags: ["FinOps","AWS Budgets","Anomaly Detection"] },
     ]
   },
   {
     tier: "Intermediate", accent: "#a78bfa", num: "02",
     projects: [
-      { id: 4,  category: "AWS",    title: "3-Tier Web Application with IaC",           desc: "Build a 3-tier web app (web + app + database) using Terraform/CloudFormation.",                            tags: ["Terraform","AWS","IaC"] },
-      { id: 5,  category: "AWS",    title: "Cloud Security Audit Tool",                 desc: "Develop scripts/tools that scan cloud accounts for unused roles, credential usage, and encryption.",        tags: ["Python","AWS","Security"] },
-      { id: 6,  category: "AWS",    title: "Technical Project Delivery – Cloud Migration", desc: "Lead the migration of on-premises infrastructure to cloud; manage scope, timeline, and stakeholders.",   tags: ["Project Mgmt","AWS","Migration"] },
-      { id: 12, category: "FinOps", title: "Resource Tagging & Governance Framework",   desc: "Design and enforce a tagging strategy across AWS resources using Tag Policies and AWS Config rules.",      tags: ["FinOps","Tagging","AWS Config"] },
-      { id: 13, category: "FinOps", title: "Cloud Waste Identification Tool",           desc: "Build a Python script that scans for idle EC2s, unattached EBS volumes, old snapshots, and unused EIPs.", tags: ["FinOps","Python","AWS","Cost Optimization"] },
+      { id: 4,  category: "AWS",    title: "Lab 04 — Lambda + API Gateway REST API",      desc: "Build a serverless REST API with Lambda, API Gateway, IAM auth, and CloudWatch logging. Deploy with IaC.", tags: ["AWS","Lambda","API Gateway","IaC"] },
+      { id: 5,  category: "AWS",    title: "Lab 05 — Multi-Tier ALB + Auto Scaling",       desc: "Deploy a multi-tier app with ALB, Auto Scaling Groups, Launch Templates, and CloudWatch dashboards.", tags: ["AWS","ALB","Auto Scaling","CloudWatch"] },
+      { id: 6,  category: "AWS",    title: "Cloud Security Audit Tool",                   desc: "Python scripts that scan cloud accounts for unused roles, stale credentials, open SGs, and missing encryption.", tags: ["Python","AWS","Security"] },
+      { id: 12, category: "FinOps", title: "Resource Tagging & Governance Framework",     desc: "Design and enforce a tagging strategy across AWS resources using Tag Policies and AWS Config rules.", tags: ["FinOps","Tagging","AWS Config"] },
+      { id: 13, category: "FinOps", title: "Cloud Waste Identification Tool",             desc: "Python script that scans for idle EC2s, unattached EBS volumes, old snapshots, and unused EIPs.", tags: ["FinOps","Python","AWS","Cost Optimization"] },
       { id: 14, category: "FinOps", title: "Reserved Instances & Savings Plans Analysis", desc: "Analyze on-demand usage patterns and model RI/Savings Plans coverage to produce a cost reduction report.", tags: ["FinOps","RI","Savings Plans","Cost Analysis"] },
     ]
   },
   {
     tier: "Advanced", accent: "#fb7185", num: "03",
     projects: [
-      { id: 7,  category: "AWS",    title: "Real-Time Data Pipeline & Analytics",       desc: "Build a streaming data pipeline: ingestion → process → analytics/dashboard.",                              tags: ["AWS","Kinesis","Analytics"] },
-      { id: 8,  category: "AWS",    title: "Hybrid/Multicloud Architecture Design",     desc: "Design a solution spanning on-premises + multi-cloud with secure connectivity and failover.",              tags: ["AWS","Terraform","Architecture"] },
-      { id: 9,  category: "AWS",    title: "Advanced Cloud Security & Automation Platform", desc: "Full automation platform: IaC + policy-as-code + monitoring + alerting + remediation.",               tags: ["Security","IaC","Automation"] },
-      { id: 15, category: "FinOps", title: "FinOps Cost Monitoring & Reporting Platform", desc: "Build a full cost visibility platform: pull AWS Cost & Usage Reports, process with Lambda, and visualize in QuickSight.", tags: ["FinOps","CUR","Lambda","QuickSight"] },
+      { id: 7,  category: "AWS",          title: "Real-Time Data Pipeline & Analytics",            desc: "Streaming data pipeline: Kinesis → Lambda → S3 → Athena → QuickSight dashboard.", tags: ["AWS","Kinesis","Analytics"] },
+      { id: 8,  category: "AWS",          title: "Hybrid/Multicloud Architecture Design",           desc: "Solution spanning on-premises + multi-cloud with secure connectivity, failover, and IaC.", tags: ["AWS","Terraform","Architecture"] },
+      { id: 9,  category: "AWS",          title: "Advanced Cloud Security & Automation Platform",   desc: "Full automation: IaC + policy-as-code + SIEM + alerting + auto-remediation.", tags: ["Security","IaC","Automation"] },
+      { id: 17, category: "IT Automation",title: "Okta Workflows + n8n Access Governance Pipeline", desc: "Full IGA pipeline: Okta Workflows for provisioning triggers, n8n for orchestration, ConductorOne for access reviews.", tags: ["Okta","n8n","IGA","ConductorOne"] },
+      { id: 15, category: "FinOps",       title: "FinOps Cost Monitoring & Reporting Platform",     desc: "Full cost visibility: AWS Cost & Usage Reports → Lambda → S3 → QuickSight dashboard.", tags: ["FinOps","CUR","Lambda","QuickSight"] },
     ]
   }
 ];
@@ -175,12 +178,17 @@ const STATUS_STYLE = {
   "Complete":    { color: "#10b981", bg: "rgba(16,185,129,0.1)",   border: "rgba(16,185,129,0.25)"  },
 };
 const CATEGORY_STYLE = {
-  "AWS":    { color: "#38bdf8", bg: "rgba(56,189,248,0.08)",  border: "rgba(56,189,248,0.2)"  },
-  "FinOps": { color: "#34d399", bg: "rgba(52,211,153,0.08)",  border: "rgba(52,211,153,0.2)"  },
+  "AWS":          { color: "#38bdf8", bg: "rgba(56,189,248,0.08)",  border: "rgba(56,189,248,0.2)"  },
+  "FinOps":       { color: "#34d399", bg: "rgba(52,211,153,0.08)",  border: "rgba(52,211,153,0.2)"  },
+  "IT Automation":{ color: "#f472b6", bg: "rgba(244,114,182,0.08)", border: "rgba(244,114,182,0.2)" },
 };
 
 const statuses = {};
 DATA.forEach(t => t.projects.forEach(p => statuses[p.id] = "Planned"));
+// Set actual statuses for completed/in-progress work
+statuses[1]  = "Complete";     // Lab 01 — S3 Static Website ✅
+statuses[2]  = "In Progress";  // Lab 02 — EC2 + VPC 🔵
+statuses[16] = "In Progress";  // n8n + OpenCode 🔵
 const collapsed = { Beginner: false, Intermediate: false, Advanced: false };
 let activeFilter = "All";
 let activeCategory = "All";
