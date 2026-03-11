@@ -266,6 +266,7 @@ function render() {
             <div class="card-tags">
               <span class="category-pill" style="color:${cs.color};background:${cs.bg};border:1px solid ${cs.border}">${project.category}</span>
               ${project.tags.map(t => `<span class="tag" style="color:${accent};background:${accent}11;border:1px solid ${accent}22">${t}</span>`).join("")}
+              ${project.link ? `<a href="${project.link}" target="_blank" style="margin-left:auto;font-size:10px;color:${accent};text-decoration:none;letter-spacing:0.05em;opacity:0.8;white-space:nowrap">View Project →</a>` : ''}
             </div>
           </div>
         `;
