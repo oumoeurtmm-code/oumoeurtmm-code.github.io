@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lab 03 — RDS + EC2 Two-Tier App | AWS Labs</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #0a0e17; --surface: #111827; --card: #1a2235;
+      --border: #1e2d45; --accent: #FF9900; --accent2: #22d3ee;
+      --accent3: #a78bfa; --green: #34d399; --yellow: #fbbf24;
+      --red: #f87171; --text: #e2e8f0; --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.6; }
+
+    header {
+      background: linear-gradient(135deg, #0d1f0d 0%, #0a0e17 50%, #1a0a2e 100%);
+      padding: 60px 40px; text-align: center;
+      border-bottom: 1px solid var(--border); position: relative; overflow: hidden;
+    }
+    header::before {
+      content: ''; position: absolute; top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background: radial-gradient(ellipse at center, rgba(52,211,153,0.05) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .lab-label { font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--green); margin-bottom: 16px; }
+    header h1 { font-size: 2.4rem; font-weight: 700; background: linear-gradient(90deg, #34d399, #22d3ee, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    header p { color: var(--muted); margin-top: 12px; font-size: 1.05rem; max-width: 720px; margin-left: auto; margin-right: auto; }
+    .badge { display: inline-block; background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 4px 14px; font-size: 0.8rem; color: var(--accent2); margin: 6px 4px; }
+    .badge.aws { color: var(--accent); border-color: rgba(255,153,0,0.3); }
+    .badge.planned { color: var(--muted); border-color: rgba(100,116,139,0.3); }
+
+    nav { display: flex; justify-content: center; gap: 8px; padding: 20px; background: var(--surface); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    nav a { color: var(--muted); text-decoration: none; padding: 8px 18px; border-radius: 8px; font-size: 0.9rem; border: 1px solid var(--border); transition: all 0.2s; }
+    nav a:hover { color: var(--text); border-color: var(--accent); background: var(--card); }
+    nav a.home { color: var(--accent); border-color: rgba(255,153,0,0.3); }
+
+    main { max-width: 1200px; margin: 0 auto; padding: 40px 24px; }
+    section { margin-bottom: 64px; }
+    h2 { font-size: 1.5rem; color: var(--accent); margin-bottom: 24px; padding-bottom: 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+    h2 .h2-icon { font-size: 1.2rem; }
+    h3 { font-size: 1.05rem; color: var(--accent2); margin-bottom: 12px; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    @media (max-width: 900px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 600px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+    .card.aws-border    { border-left: 3px solid var(--accent); }
+    .card.green-border  { border-left: 3px solid var(--green); }
+    .card.cyan-border   { border-left: 3px solid var(--accent2); }
+    .card.purple-border { border-left: 3px solid var(--accent3); }
+    .card.red-border    { border-left: 3px solid var(--red); }
+
+    .stat { text-align: center; }
+    .stat .number { font-size: 2.4rem; font-weight: 700; color: var(--green); }
+    .stat .label { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+
+    .service-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center; transition: border-color 0.2s, transform 0.2s; }
+    .service-card:hover { border-color: var(--green); transform: translateY(-2px); }
+    .service-icon { font-size: 2.2rem; font-weight: 900; color: var(--green); margin-bottom: 10px; font-family: monospace; }
+    .service-name { font-weight: 700; font-size: 1rem; margin-bottom: 6px; }
+    .service-desc { color: var(--muted); font-size: 0.82rem; line-height: 1.55; }
+
+    .mermaid-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; overflow-x: auto; }
+
+    .steps { display: flex; flex-direction: column; gap: 0; }
+    .step { display: flex; gap: 16px; position: relative; padding-bottom: 24px; }
+    .step:last-child { padding-bottom: 0; }
+    .step:last-child .step-line { display: none; }
+    .step-left { display: flex; flex-direction: column; align-items: center; width: 36px; flex-shrink: 0; }
+    .step-num { width: 36px; height: 36px; border-radius: 50%; background: var(--green); color: #000; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; flex-shrink: 0; }
+    .step-line { width: 2px; flex: 1; background: var(--border); margin-top: 6px; }
+    .step-content { flex: 1; padding-top: 6px; }
+    .step-title { font-weight: 600; font-size: 1rem; margin-bottom: 4px; }
+    .step-desc { color: var(--muted); font-size: 0.88rem; }
+    .step-cmd { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; font-family: monospace; font-size: 0.8rem; color: var(--green); margin-top: 8px; overflow-x: auto; }
+    .step-tags { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .tag { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+    .tag.aws    { background: rgba(255,153,0,0.12);   color: #FF9900;   border: 1px solid rgba(255,153,0,0.25); }
+    .tag.cyan   { background: rgba(34,211,238,0.1);   color: #22d3ee;   border: 1px solid rgba(34,211,238,0.2); }
+    .tag.green  { background: rgba(52,211,153,0.1);   color: #34d399;   border: 1px solid rgba(52,211,153,0.2); }
+    .tag.purple { background: rgba(167,139,250,0.1);  color: #a78bfa;   border: 1px solid rgba(167,139,250,0.2); }
+    .tag.red    { background: rgba(248,113,113,0.1);  color: #f87171;   border: 1px solid rgba(248,113,113,0.2); }
+
+    .concept-list { list-style: none; }
+    .concept-list li { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; color: var(--muted); align-items: flex-start; }
+    .concept-list li:last-child { border-bottom: none; }
+    .concept-list .check { color: var(--green); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+    .concept-list strong { color: var(--text); }
+
+    pre { background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: monospace; font-size: 0.82rem; color: var(--green); overflow-x: auto; margin-top: 10px; line-height: 1.6; }
+    code { background: rgba(52,211,153,0.08); color: var(--green); padding: 1px 6px; border-radius: 4px; font-family: monospace; font-size: 0.85em; }
+
+    .cost-box { background: linear-gradient(135deg, rgba(52,211,153,0.08), transparent); border: 1px solid rgba(52,211,153,0.3); border-radius: 12px; padding: 28px; text-align: center; }
+    .cost-price { font-size: 3.5rem; font-weight: 900; color: var(--green); }
+    .cost-sub { color: var(--muted); font-size: 0.88rem; margin-top: 6px; }
+
+    .chart-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+    canvas { max-height: 260px; }
+
+    .timeline { display: flex; justify-content: space-between; align-items: flex-start; position: relative; padding: 20px 0; }
+    .timeline::before { content: ''; position: absolute; top: 38px; left: 0; right: 0; height: 2px; background: var(--border); }
+    .timeline-item { display: flex; flex-direction: column; align-items: center; flex: 1; position: relative; }
+    .timeline-dot { width: 16px; height: 16px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); z-index: 1; margin-bottom: 12px; }
+    .timeline-dot.done { background: var(--green); }
+    .timeline-dot.active { background: var(--accent); box-shadow: 0 0 12px rgba(255,153,0,0.5); }
+    .timeline-dot.pending { background: var(--border); }
+    .timeline-label { font-size: 0.75rem; color: var(--muted); text-align: center; max-width: 80px; line-height: 1.4; }
+    .timeline-label.done { color: var(--green); }
+    .timeline-label.active { color: var(--accent); }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th { background: var(--surface); color: var(--accent2); padding: 11px 14px; text-align: left; border-bottom: 2px solid var(--border); }
+    td { padding: 11px 14px; border-bottom: 1px solid var(--border); color: var(--muted); }
+    td:first-child { color: var(--text); font-weight: 500; }
+    tr:hover td { background: var(--surface); }
+
+    .coming-soon { text-align: center; padding: 80px 24px; }
+    .coming-soon .icon { font-size: 3rem; margin-bottom: 16px; }
+    .coming-soon h3 { font-family: sans-serif; font-size: 1.4rem; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+    .coming-soon p { color: var(--muted); font-size: 0.95rem; }
+
+    footer { text-align: center; padding: 40px; color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--border); margin-top: 40px; }
+    footer a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="lab-label">AWS Lab Series · Lab 03 of 05</div>
+  <h1>RDS + EC2 Two-Tier App</h1>
+  <p>Deploy a two-tier architecture with an EC2 app server in a public subnet and a MySQL RDS database in private subnets. Credentials managed by Secrets Manager — no hardcoded passwords.</p>
+  <div style="margin-top:20px">
+    <span class="badge planned">🔵 In Progress</span>
+    <span class="badge aws">Amazon RDS</span>
+    <span class="badge aws">Amazon EC2</span>
+    <span class="badge aws">VPC</span>
+    <span class="badge aws">Secrets Manager</span>
+    <span class="badge aws">IAM</span>
+    <span class="badge aws">SSM</span>
+  </div>
+</header>
+
+<nav>
+  <a href="../../index.html" class="home">← Portfolio</a>
+  <a href="#overview">Overview</a>
+  <a href="#architecture">Architecture</a>
+  <a href="#process">Deploy Process</a>
+  <a href="#services">Services</a>
+  <a href="#concepts">Key Concepts</a>
+  <a href="#cost">Cost</a>
+  <a href="#commands">Commands</a>
+</nav>
+
+<main>
+
+  <!-- LAB SERIES TIMELINE -->
+  <section style="margin-bottom:40px">
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-dot done"></div>
+        <div class="timeline-label done">Lab 01<br>S3 + CloudFront</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot done"></div>
+        <div class="timeline-label done">Lab 02<br>EC2 + VPC</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot active"></div>
+        <div class="timeline-label active">Lab 03<br>RDS + EC2</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot pending"></div>
+        <div class="timeline-label">Lab 04<br>Lambda + API GW</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot pending"></div>
+        <div class="timeline-label">Lab 05<br>Multi-tier ALB</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section id="overview">
+    <h2><span class="h2-icon">📊</span> Lab Overview</h2>
+    <div class="grid-4" style="margin-bottom:24px">
+      <div class="card stat"><div class="number">6</div><div class="label">AWS Services Used</div></div>
+      <div class="card stat"><div class="number" style="color:var(--green)">~$0</div><div class="label">Cost (Free Tier)</div></div>
+      <div class="card stat"><div class="number">0</div><div class="label">Hardcoded Passwords</div></div>
+      <div class="card stat"><div class="number">~10m</div><div class="label">Deploy Time (RDS)</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card green-border">
+        <h3>What You're Building</h3>
+        <p style="color:var(--muted);font-size:0.9rem;margin-bottom:14px">A classic two-tier web application pattern — app tier in a public subnet, data tier in isolated private subnets. The foundation of most production web apps on AWS.</p>
+        <ul class="concept-list">
+          <li><span class="check">▸</span><span><strong>3-subnet VPC</strong> — 1 public (EC2) + 2 private across 2 AZs (RDS subnet group requirement)</span></li>
+          <li><span class="check">▸</span><span><strong>EC2 app server</strong> — public subnet, public IP, MySQL client, reaches SSM via IGW (no NAT Gateway)</span></li>
+          <li><span class="check">▸</span><span><strong>RDS MySQL 8.0</strong> — db.t3.micro, private subnets, not publicly accessible</span></li>
+          <li><span class="check">▸</span><span><strong>SG referencing</strong> — RDS SG allows inbound 3306 from EC2 SG object, not a CIDR block</span></li>
+          <li><span class="check">▸</span><span><strong>Secrets Manager</strong> — DB password stored encrypted, retrieved via IAM-controlled API call</span></li>
+        </ul>
+      </div>
+      <div class="card cyan-border">
+        <h3>Key Design Decisions</h3>
+        <table style="margin-top:8px">
+          <thead><tr><th>Decision</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td>EC2 in public subnet</td><td>Avoids NAT Gateway — public IP reaches SSM via IGW directly</td></tr>
+            <tr><td>RDS in private subnets</td><td>No public IP — only reachable from within the VPC</td></tr>
+            <tr><td>2 private subnets</td><td>DB subnet group requires minimum 2 AZs</td></tr>
+            <tr><td>SG referencing</td><td>Rules follow the SG, not the IP — more secure</td></tr>
+            <tr><td>Secrets Manager</td><td>Zero hardcoded credentials, rotation-ready</td></tr>
+            <tr><td>No Multi-AZ RDS</td><td>Lab environment — saves cost, faster deploy/delete</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ARCHITECTURE -->
+  <section id="architecture">
+    <h2><span class="h2-icon">🏗</span> Architecture</h2>
+    <div class="mermaid-wrap" style="margin-bottom:20px">
+      <div class="mermaid">
+graph TB
+    Internet(["🌐 Internet"])
+    subgraph AWS ["☁️ AWS Cloud — us-east-1"]
+      subgraph VPC ["🏗️ VPC 10.0.0.0/16"]
+        IGW["🔀 Internet Gateway"]
+        subgraph Public ["📦 Public Subnet 10.0.1.0/24 · us-east-1a"]
+          EC2["💻 EC2 App Server\nt3.micro · AL2023\nMySQL client installed"]
+        end
+        subgraph Priv1 ["📦 Private Subnet 1 10.0.2.0/24 · us-east-1a"]
+          RDS["🗄️ RDS MySQL 8.0\ndb.t3.micro\nNo Public IP"]
+        end
+        subgraph Priv2 ["📦 Private Subnet 2 10.0.3.0/24 · us-east-1b"]
+          RDSSG["DB Subnet Group\nAZ coverage"]
+        end
+      end
+      SSM["🔧 SSM"]
+      SM["🔑 Secrets Manager"]
+    end
+    Internet --> IGW --> EC2
+    EC2 -->|3306| RDS
+    SSM -->|443| EC2
+    EC2 -->|get-secret| SM
+    style EC2 fill:#7a3500,stroke:#FF9900,color:#e2e8f0
+    style RDS fill:#052e16,stroke:#34d399,color:#e2e8f0
+    style SSM fill:#2d1b69,stroke:#a78bfa,color:#e2e8f0
+    style SM fill:#0c3a4a,stroke:#22d3ee,color:#e2e8f0
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card green-border">
+        <h3>Two-Tier vs Three-Tier</h3>
+        <table style="margin-top:8px">
+          <thead><tr><th>Tier</th><th>This Lab</th><th>Three-Tier</th></tr></thead>
+          <tbody>
+            <tr><td>Presentation</td><td>—</td><td>ALB + CloudFront</td></tr>
+            <tr><td>Application</td><td>EC2 (public subnet)</td><td>EC2 (private subnet)</td></tr>
+            <tr><td>Data</td><td>RDS (private subnets)</td><td>RDS (private subnets)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card purple-border">
+        <h3>SG Referencing Pattern</h3>
+        <p style="color:var(--muted);font-size:0.88rem;margin-bottom:12px">Instead of allowing 10.0.1.0/24 → port 3306, the RDS SG references the EC2 SG directly:</p>
+        <pre style="font-size:0.78rem">RDS SG Inbound:
+  Protocol: TCP
+  Port: 3306
+  Source: sg-xxxx (EC2 SG)
+  ↑
+  This follows the instance,
+  not its IP address.</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- DEPLOY PROCESS -->
+  <section id="process">
+    <h2><span class="h2-icon">🚀</span> Deployment Process</h2>
+    <div class="grid-2">
+      <div>
+        <div class="mermaid-wrap">
+          <div class="mermaid">
+flowchart TD
+    A([▶ Run deploy.sh]) --> B[Create VPC\n3 Subnets · IGW\nPublic Route Table]
+    B --> C[Create Security Groups\nEC2 SG + RDS SG\nSG Reference Rule]
+    C --> D[Create IAM Role\nSSM + Secrets Manager]
+    D --> E[Generate DB Password\nStore in Secrets Manager]
+    E --> F[Create DB Subnet Group\n2 Private Subnets · 2 AZs]
+    F --> G[Create RDS MySQL\ndb.t3.micro · Private\n~8 min wait]
+    G --> H[Launch EC2\nPublic Subnet\nMySQL client installed]
+    H --> I([✅ Ready\nSSM + RDS endpoint printed])
+    style A fill:#052e16,stroke:#34d399,color:#e2e8f0
+    style G fill:#052e16,stroke:#34d399,color:#e2e8f0
+    style I fill:#052e16,stroke:#34d399,color:#e2e8f0
+    style E fill:#0c3a4a,stroke:#22d3ee,color:#e2e8f0
+    style D fill:#2d1b69,stroke:#a78bfa,color:#e2e8f0
+          </div>
+        </div>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-left"><div class="step-num">1</div><div class="step-line"></div></div>
+          <div class="step-content">
+            <div class="step-title">VPC + 3 Subnets</div>
+            <div class="step-desc">1 public subnet for EC2. 2 private subnets in different AZs for the RDS DB subnet group requirement.</div>
+            <div class="step-tags"><span class="tag cyan">VPC</span><span class="tag green">3 Subnets</span><span class="tag cyan">Multi-AZ</span></div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-left"><div class="step-num">2</div><div class="step-line"></div></div>
+          <div class="step-content">
+            <div class="step-title">Security Groups with SG Reference</div>
+            <div class="step-desc">EC2 SG: egress 443 (SSM) + 3306 (RDS). RDS SG: inbound 3306 from EC2 SG object — not a CIDR block.</div>
+            <div class="step-tags"><span class="tag red">No Inbound EC2</span><span class="tag green">SG Reference</span></div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-left"><div class="step-num">3</div><div class="step-line"></div></div>
+          <div class="step-content">
+            <div class="step-title">Secrets Manager</div>
+            <div class="step-desc">Random 20-char password generated with openssl. Stored as JSON with username, password, dbname. Retrieved on EC2 via IAM role.</div>
+            <div class="step-tags"><span class="tag cyan">Encrypted</span><span class="tag purple">IAM Controlled</span></div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-left"><div class="step-num">4</div><div class="step-line"></div></div>
+          <div class="step-content">
+            <div class="step-title">RDS MySQL (~8 minutes)</div>
+            <div class="step-desc">db.t3.micro MySQL 8.0, 20GB gp2 storage, no public access, single-AZ, backup retention disabled for fast cleanup.</div>
+            <div class="step-tags"><span class="tag green">Private</span><span class="tag aws">MySQL 8.0</span><span class="tag red">No Public IP</span></div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-left"><div class="step-num">5</div><div class="step-line"></div></div>
+          <div class="step-content">
+            <div class="step-title">EC2 with MySQL Client</div>
+            <div class="step-desc">User data script installs MySQL client on launch. Public IP allows SSM via IGW — no NAT Gateway needed.</div>
+            <div class="step-cmd">mysql -h $RDS_ENDPOINT -u admin -p$DB_PASS labdb</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICES -->
+  <section id="services">
+    <h2><span class="h2-icon">⚙️</span> AWS Services Deep Dive</h2>
+    <div class="grid-3" style="margin-bottom:20px">
+      <div class="service-card">
+        <div class="service-icon">RDS</div>
+        <div class="service-name">Amazon RDS</div>
+        <div class="service-desc">Managed relational database. AWS handles patching, backups, storage scaling, and failover. Supports MySQL, PostgreSQL, MariaDB, Oracle, SQL Server, and Aurora.</div>
+        <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:4px;justify-content:center">
+          <span class="tag green">MySQL 8.0</span><span class="tag aws">db.t3.micro</span>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">SM</div>
+        <div class="service-name">Secrets Manager</div>
+        <div class="service-desc">Encrypted secret storage with IAM-controlled access. Supports automatic rotation for RDS, Redshift, DocumentDB, and custom secrets. Never store passwords in code.</div>
+        <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:4px;justify-content:center">
+          <span class="tag cyan">Encrypted</span><span class="tag green">Auto-Rotate</span>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">DB</div>
+        <div class="service-name">DB Subnet Group</div>
+        <div class="service-desc">A collection of subnets that RDS can use to place the DB instance. Requires at least 2 subnets in different AZs — even for single-AZ deployments.</div>
+        <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:4px;justify-content:center">
+          <span class="tag purple">2 AZs Required</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card aws-border">
+      <h3>RDS vs Self-Managed MySQL on EC2</h3>
+      <table style="margin-top:12px">
+        <thead><tr><th></th><th>RDS (Managed)</th><th>MySQL on EC2 (Self-Managed)</th></tr></thead>
+        <tbody>
+          <tr><td>OS patching</td><td>AWS handles it</td><td>You handle it</td></tr>
+          <tr><td>Automated backups</td><td>Built-in (0-35 day retention)</td><td>You configure it</td></tr>
+          <tr><td>Multi-AZ failover</td><td>One checkbox</td><td>Complex setup</td></tr>
+          <tr><td>Storage scaling</td><td>Auto scaling available</td><td>Manual EBS resize</td></tr>
+          <tr><td>Read replicas</td><td>Built-in</td><td>Manual replication setup</td></tr>
+          <tr><td>Cost</td><td>Higher (managed premium)</td><td>Lower (but more ops work)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- KEY CONCEPTS -->
+  <section id="concepts">
+    <h2><span class="h2-icon">🧠</span> Key Concepts Practiced</h2>
+    <div class="grid-2">
+      <div class="card green-border">
+        <h3>RDS & Databases</h3>
+        <ul class="concept-list">
+          <li><span class="check">✓</span><span><strong>DB Subnet Groups</strong> — RDS uses them to pick which subnet to deploy into. Must span 2+ AZs even for single-AZ instances.</span></li>
+          <li><span class="check">✓</span><span><strong>Publicly Accessible flag</strong> — Controls whether RDS gets a public IP. Even with <code>false</code>, it's still reachable within the VPC.</span></li>
+          <li><span class="check">✓</span><span><strong>Multi-AZ</strong> — Synchronous standby replica in a different AZ. Automatic failover if primary fails. Not the same as a read replica.</span></li>
+          <li><span class="check">✓</span><span><strong>Backup retention = 0</strong> — Disables automated backups. In production, set 7-35 days. We use 0 for faster cleanup in labs.</span></li>
+        </ul>
+      </div>
+      <div class="card cyan-border">
+        <h3>Security Patterns</h3>
+        <ul class="concept-list">
+          <li><span class="check">✓</span><span><strong>SG Referencing</strong> — RDS SG allows port 3306 from EC2 SG. Rules follow the instance even if its IP changes.</span></li>
+          <li><span class="check">✓</span><span><strong>Secrets Manager retrieval</strong> — EC2 calls <code>get-secret-value</code> at runtime via IAM role. No password in code, config files, or env vars.</span></li>
+          <li><span class="check">✓</span><span><strong>Defense in depth</strong> — RDS is protected by: VPC isolation, private subnets, no public IP, RDS SG (port 3306 only), IAM.</span></li>
+          <li><span class="check">✓</span><span><strong>No NAT Gateway</strong> — EC2 in public subnet with public IP reaches SSM and Secrets Manager directly via IGW.</span></li>
+        </ul>
+      </div>
+      <div class="card purple-border">
+        <h3>Architecture Patterns</h3>
+        <ul class="concept-list">
+          <li><span class="check">✓</span><span><strong>Two-tier architecture</strong> — App tier (EC2) separated from data tier (RDS) at the subnet and security group level.</span></li>
+          <li><span class="check">✓</span><span><strong>Principle of least privilege</strong> — EC2 SG only allows what it needs: 443 for SSM, 3306 for RDS. Nothing else.</span></li>
+          <li><span class="check">✓</span><span><strong>Private data tier</strong> — RDS has no public IP. The only path in is through EC2, which itself is controlled by SGs and IAM.</span></li>
+          <li><span class="check">✓</span><span><strong>User data for bootstrapping</strong> — MySQL client installed at launch via EC2 user data script — no manual setup needed.</span></li>
+        </ul>
+      </div>
+      <div class="card aws-border">
+        <h3>Exam Notes</h3>
+        <ul class="concept-list">
+          <li><span class="check">✓</span><span><strong>RDS endpoint</strong> — A DNS name that always resolves to the current primary. Doesn't change during Multi-AZ failover.</span></li>
+          <li><span class="check">✓</span><span><strong>Secrets Manager vs Parameter Store</strong> — Secrets Manager: rotation, higher cost ($0.40/secret). Parameter Store SecureString: cheaper, no auto-rotation.</span></li>
+          <li><span class="check">✓</span><span><strong>gp2 vs gp3 storage</strong> — gp3 is newer and cheaper with baseline 3000 IOPS. gp2 scales IOPS with size. Free tier uses gp2.</span></li>
+          <li><span class="check">✓</span><span><strong>Read replica vs Multi-AZ</strong> — Read replica: asynchronous, for read scaling. Multi-AZ: synchronous, for HA/failover only.</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- COST -->
+  <section id="cost">
+    <h2><span class="h2-icon">💰</span> Cost Breakdown</h2>
+    <div class="grid-2">
+      <div class="cost-box">
+        <div class="cost-price">~$0</div>
+        <div class="cost-sub">Within AWS Free Tier limits</div>
+        <p style="color:var(--muted);font-size:0.85rem;margin-top:16px">Both EC2 t3.micro and RDS db.t3.micro are free tier eligible (750 hrs/month each for first 12 months). No NAT Gateway = no $0.045/hr charge.</p>
+      </div>
+      <div class="chart-wrap">
+        <h3 style="margin-bottom:16px">Hourly Cost vs Lab 02</h3>
+        <canvas id="costChart"></canvas>
+      </div>
+    </div>
+    <div class="card green-border" style="margin-top:20px">
+      <h3>Cost Reference</h3>
+      <table style="margin-top:12px">
+        <thead><tr><th>Resource</th><th>Cost</th><th>Free Tier</th></tr></thead>
+        <tbody>
+          <tr><td>EC2 t3.micro</td><td>$0.0104/hr</td><td>✅ 750 hrs/month</td></tr>
+          <tr><td>RDS db.t3.micro</td><td>$0.017/hr</td><td>✅ 750 hrs/month</td></tr>
+          <tr><td>RDS Storage 20GB gp2</td><td>$0.115/GB/month</td><td>✅ 20GB included</td></tr>
+          <tr><td>Secrets Manager</td><td>$0.40/secret/month</td><td>❌ No free tier (negligible)</td></tr>
+          <tr><td>NAT Gateway</td><td style="color:var(--green)">$0.00 (not used)</td><td>—</td></tr>
+          <tr><td>VPC, Subnets, IGW, SGs</td><td>Free</td><td>✅</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- COMMANDS -->
+  <section id="commands">
+    <h2><span class="h2-icon">💻</span> Commands Reference</h2>
+    <div class="grid-2">
+      <div class="card green-border">
+        <h3>Deploy (~10 minutes)</h3>
+        <pre>cd ~/workspace/ai-terminal-workflow
+bash projects/03-rds-ec2-two-tier/scripts/deploy.sh</pre>
+      </div>
+      <div class="card red-border">
+        <h3>Cleanup (always run after lab)</h3>
+        <pre>bash projects/03-rds-ec2-two-tier/scripts/cleanup.sh
+
+# Verify nothing remains
+aws resourcegroupstaggingapi get-resources \
+  --tag-filters Key=Project,Values=aws-cert-study \
+  --query 'ResourceTagMappingList[].ResourceARN'</pre>
+      </div>
+      <div class="card cyan-border">
+        <h3>Connect to EC2 + RDS</h3>
+        <pre># 1. Connect to EC2 via SSM
+aws ssm start-session \
+  --target $INSTANCE_ID --region us-east-1
+
+# 2. Get credentials from Secrets Manager
+SECRET=$(aws secretsmanager get-secret-value \
+  --secret-id aws-cert-study/lab03/db-credentials \
+  --query SecretString --output text --region us-east-1)
+DB_PASS=$(echo $SECRET | python3 -c \
+  "import sys,json; print(json.load(sys.stdin)['password'])")
+
+# 3. Connect to MySQL
+mysql -h $RDS_ENDPOINT -u admin -p$DB_PASS labdb</pre>
+      </div>
+      <div class="card purple-border">
+        <h3>SQL Commands to Run</h3>
+        <pre>SHOW DATABASES;
+CREATE TABLE users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(50),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+INSERT INTO users (name) VALUES ('Omie'),('Lab03'),('AWS');
+SELECT * FROM users;
+SHOW TABLES;
+EXIT;</pre>
+      </div>
+    </div>
+    <div class="card aws-border" style="margin-top:20px">
+      <h3>Source Code</h3>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:12px">
+        <a href="https://github.com/oumoeurtmm-code/ai-terminal-workflow/tree/master/projects/03-rds-ec2-two-tier" target="_blank" style="color:var(--accent);text-decoration:none;font-size:0.9rem">→ deploy.sh + cleanup.sh on GitHub</a>
+        <a href="../project-tracker/" style="color:var(--accent3);text-decoration:none;font-size:0.9rem">→ View all labs in Project Tracker</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p>AWS Lab 03 — RDS + EC2 Two-Tier App</p>
+  <p style="margin-top:6px">
+    <a href="../../index.html">← Back to Portfolio</a> &nbsp;|&nbsp;
+    <a href="../project-tracker/">Project Tracker</a> &nbsp;|&nbsp;
+    <a href="https://github.com/oumoeurtmm-code/ai-terminal-workflow/tree/master/projects/03-rds-ec2-two-tier" target="_blank">GitHub Repo</a>
+  </p>
+</footer>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true, theme: 'dark',
+    themeVariables: {
+      primaryColor: '#052e16', primaryTextColor: '#e2e8f0',
+      primaryBorderColor: '#34d399', lineColor: '#94a3b8',
+      secondaryColor: '#1a2235', tertiaryColor: '#111827',
+      edgeLabelBackground: '#111827'
+    }
+  });
+
+  new Chart(document.getElementById('costChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Lab 02\n(with NAT GW)', 'Lab 03\n(no NAT GW)'],
+      datasets: [{
+        label: 'Hourly Cost ($)',
+        data: [0.0554, 0.0274],
+        backgroundColor: ['rgba(248,113,113,0.6)', 'rgba(52,211,153,0.6)'],
+        borderColor: ['#f87171', '#34d399'],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e2d45' } },
+        y: {
+          ticks: { color: '#94a3b8', callback: v => '$' + v.toFixed(3) },
+          grid: { color: '#1e2d45' },
+          title: { display: true, text: 'Cost per Hour (USD)', color: '#94a3b8' }
+        }
+      },
+      plugins: { legend: { labels: { color: '#94a3b8' } } }
+    }
+  });
+</script>
+</body>
+</html>
