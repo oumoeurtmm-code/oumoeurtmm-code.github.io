@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lab 02 — EC2 + VPC + Security Groups | AWS Labs</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #0a0e17;
+      --surface: #111827;
+      --card: #1a2235;
+      --border: #1e2d45;
+      --accent: #FF9900;
+      --accent2: #22d3ee;
+      --accent3: #a78bfa;
+      --green: #34d399;
+      --yellow: #fbbf24;
+      --red: #f87171;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.6; }
+
+    header {
+      background: linear-gradient(135deg, #001a2e 0%, #0a0e17 50%, #1a0a00 100%);
+      padding: 60px 40px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+    header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(ellipse at center, rgba(34,211,238,0.05) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .lab-label { font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent2); margin-bottom: 16px; }
+    header h1 { font-size: 2.4rem; font-weight: 700; background: linear-gradient(90deg, #22d3ee, #a78bfa, #FF9900); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    header p { color: var(--muted); margin-top: 12px; font-size: 1.05rem; max-width: 720px; margin-left: auto; margin-right: auto; }
+    .badge { display: inline-block; background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 4px 14px; font-size: 0.8rem; color: var(--accent2); margin: 6px 4px; }
+    .badge.aws { color: var(--accent); border-color: rgba(255,153,0,0.3); }
+    .badge.done { color: var(--green); border-color: rgba(52,211,153,0.3); }
+
+    nav { display: flex; justify-content: center; gap: 8px; padding: 20px; background: var(--surface); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    nav a { color: var(--muted); text-decoration: none; padding: 8px 18px; border-radius: 8px; font-size: 0.9rem; border: 1px solid var(--border); transition: all 0.2s; }
+    nav a:hover { color: var(--text); border-color: var(--accent); background: var(--card); }
+    nav a.home { color: var(--accent); border-color: rgba(255,153,0,0.3); }
+
+    main { max-width: 1200px; margin: 0 auto; padding: 40px 24px; }
+    section { margin-bottom: 64px; }
+    h2 { font-size: 1.5rem; color: var(--accent); margin-bottom: 24px; padding-bottom: 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+    h2 .h2-icon { font-size: 1.2rem; }
+    h3 { font-size: 1.05rem; color: var(--accent2); margin-bottom: 12px; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    @media (max-width: 900px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 600px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+    .card.aws-border    { border-left: 3px solid var(--accent); }
+    .card.green-border  { border-left: 3px solid var(--green); }
+    .card.cyan-border   { border-left: 3px solid var(--accent2); }
+    .card.purple-border { border-left: 3px solid var(--accent3); }
+    .card.red-border    { border-left: 3px solid var(--red); }
+
+    .stat { text-align: center; }
+    .stat .number { font-size: 2.4rem; font-weight: 700; color: var(--accent2); }
+    .stat .label { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+
+    .service-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center; transition: border-color 0.2s, transform 0.2s; }
+    .service-card:hover { border-color: var(--accent2); transform: translateY(-2px); }
+    .service-icon { font-size: 2.2rem; font-weight: 900; color: var(--accent2); margin-bottom: 10px; font-family: monospace; }
+    .service-name { font-weight: 700; font-size: 1rem; margin-bottom: 6px; }
+    .service-desc { color: var(--muted); font-size: 0.82rem; line-height: 1.55; }
+
+    .mermaid-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; overflow-x: auto; }
+    .mermaid-wrap .mermaid svg { max-width: 100%; }
+
+    .steps { display: flex; flex-direction: column; gap: 0; }
+    .step { display: flex; gap: 16px; position: relative; padding-bottom: 24px; }
+    .step:last-child { padding-bottom: 0; }
+    .step:last-child .step-line { display: none; }
+    .step-left { display: flex; flex-direction: column; align-items: center; width: 36px; flex-shrink: 0; }
+    .step-num { width: 36px; height: 36px; border-radius: 50%; background: var(--accent2); color: #000; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; flex-shrink: 0; }
+    .step-line { width: 2px; flex: 1; background: var(--border); margin-top: 6px; }
+    .step-content { flex: 1; padding-top: 6px; }
+    .step-title { font-weight: 600; font-size: 1rem; margin-bottom: 4px; }
+    .step-desc { color: var(--muted); font-size: 0.88rem; }
+    .step-cmd { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; font-family: monospace; font-size: 0.8rem; color: var(--green); margin-top: 8px; overflow-x: auto; }
+    .step-tags { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .tag { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+    .tag.aws    { background: rgba(255,153,0,0.12);   color: #FF9900;   border: 1px solid rgba(255,153,0,0.25); }
+    .tag.cyan   { background: rgba(34,211,238,0.1);   color: #22d3ee;   border: 1px solid rgba(34,211,238,0.2); }
+    .tag.green  { background: rgba(52,211,153,0.1);   color: #34d399;   border: 1px solid rgba(52,211,153,0.2); }
+    .tag.purple { background: rgba(167,139,250,0.1);  color: #a78bfa;   border: 1px solid rgba(167,139,250,0.2); }
+    .tag.red    { background: rgba(248,113,113,0.1);  color: #f87171;   border: 1px solid rgba(248,113,113,0.2); }
+
+    .concept-list { list-style: none; }
+    .concept-list li { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; color: var(--muted); align-items: flex-start; }
+    .concept-list li:last-child { border-bottom: none; }
+    .concept-list .check { color: var(--green); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+    .concept-list strong { color: var(--text); }
+
+    pre { background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: monospace; font-size: 0.82rem; color: var(--green); overflow-x: auto; margin-top: 10px; line-height: 1.6; }
+    code { background: rgba(34,211,238,0.08); color: var(--accent2); padding: 1px 6px; border-radius: 4px; font-family: monospace; font-size: 0.85em; }
+
+    .cost-box { background: linear-gradient(135deg, rgba(248,113,113,0.08), transparent); border: 1px solid rgba(248,113,113,0.3); border-radius: 12px; padding: 28px; text-align: center; }
+    .cost-price { font-size: 3.5rem; font-weight: 900; color: var(--red); }
+    .cost-sub { color: var(--muted); font-size: 0.88rem; margin-top: 6px; }
+
+    .chart-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+    canvas { max-height: 260px; }
+
+    .timeline { display: flex; justify-content: space-between; align-items: flex-start; position: relative; padding: 20px 0; }
+    .timeline::before { content: ''; position: absolute; top: 38px; left: 0; right: 0; height: 2px; background: var(--border); }
+    .timeline-item { display: flex; flex-direction: column; align-items: center; flex: 1; position: relative; }
+    .timeline-dot { width: 16px; height: 16px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); z-index: 1; margin-bottom: 12px; }
+    .timeline-dot.done { background: var(--green); }
+    .timeline-dot.active { background: var(--accent); box-shadow: 0 0 12px rgba(255,153,0,0.5); }
+    .timeline-dot.pending { background: var(--border); }
+    .timeline-label { font-size: 0.75rem; color: var(--muted); text-align: center; max-width: 80px; line-height: 1.4; }
+    .timeline-label.done { color: var(--green); }
+    .timeline-label.active { color: var(--accent); }
+
+    .screenshot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    .screenshot-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .screenshot-card img { width: 100%; display: block; border-bottom: 1px solid var(--border); }
+    .screenshot-label { padding: 10px 14px; font-size: 0.8rem; color: var(--muted); }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th { background: var(--surface); color: var(--accent2); padding: 11px 14px; text-align: left; border-bottom: 2px solid var(--border); }
+    td { padding: 11px 14px; border-bottom: 1px solid var(--border); color: var(--muted); }
+    td:first-child { color: var(--text); font-weight: 500; }
+    tr:hover td { background: var(--surface); }
+
+    footer { text-align: center; padding: 40px; color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--border); margin-top: 40px; }
+    footer a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="lab-label">AWS Lab Series · Lab 02 of 05</div>
+  <h1>EC2 + VPC + Security Groups + SSM</h1>
+  <p>Deploy a hardened EC2 instance inside a custom VPC with public and private subnets, NAT Gateway, and SSM Session Manager access — zero open ports, no SSH keys required.</p>
+  <div style="margin-top:20px">
+    <span class="badge done">✅ Complete</span>
+    <span class="badge aws">Amazon EC2</span>
+    <span class="badge aws">VPC</span>
+    <span class="badge aws">Security Groups</span>
+    <span class="badge aws">IAM</span>
+    <span class="badge aws">SSM</span>
+    <span class="badge">NAT Gateway</span>
+    <span class="badge">No SSH</span>
+  </div>
+</header>
+
+<nav>
+  <a href="../../index.html" class="home">← Portfolio</a>
+  <a href="#overview">Overview</a>
+  <a href="#architecture">Architecture</a>
+  <a href="#process">Deploy Process</a>
+  <a href="#services">Services</a>
+  <a href="#concepts">Key Concepts</a>
+  <a href="#cost">Cost</a>
+  <a href="#commands">Commands</a>
+  <a href="#screenshots">Screenshots</a>
+</nav>
+
+<main>
+
+  <!-- LAB SERIES TIMELINE -->
+  <section style="margin-bottom:40px">
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-dot done"></div>
+        <div class="timeline-label done">Lab 01<br>S3 + CloudFront</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot done"></div>
+        <div class="timeline-label done">Lab 02<br>EC2 + VPC</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot active"></div>
+        <div class="timeline-label active">Lab 03<br>RDS + EC2</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot pending"></div>
+        <div class="timeline-label">Lab 04<br>Lambda + API GW</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot pending"></div>
+        <div class="timeline-label">Lab 05<br>Multi-tier ALB</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section id="overview">
+    <h2><span class="h2-icon">📊</span> Lab Overview</h2>
+    <div class="grid-4" style="margin-bottom:24px">
+      <div class="card stat"><div class="number">5</div><div class="label">AWS Services Used</div></div>
+      <div class="card stat"><div class="number" style="color:var(--red)">$0.05</div><div class="label">Cost per Hour (NAT GW)</div></div>
+      <div class="card stat"><div class="number">0</div><div class="label">Open Inbound Ports</div></div>
+      <div class="card stat"><div class="number">~3m</div><div class="label">Deploy Time</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card cyan-border">
+        <h3>What You're Building</h3>
+        <p style="color:var(--muted);font-size:0.9rem;margin-bottom:14px">A hardened EC2 instance in a custom VPC — private subnet, no public IP, no open ports. SSM Session Manager replaces SSH entirely.</p>
+        <ul class="concept-list">
+          <li><span class="check">▸</span><span><strong>Custom VPC</strong> — 10.0.0.0/16 CIDR with public and private subnets in separate AZs</span></li>
+          <li><span class="check">▸</span><span><strong>Internet Gateway</strong> — attached to VPC, routes public subnet outbound traffic</span></li>
+          <li><span class="check">▸</span><span><strong>NAT Gateway</strong> — in public subnet with Elastic IP, gives private instances outbound internet access</span></li>
+          <li><span class="check">▸</span><span><strong>Security Group</strong> — zero inbound rules, egress port 443 only (SSM requirement)</span></li>
+          <li><span class="check">▸</span><span><strong>EC2 in private subnet</strong> — Amazon Linux 2023, t3.micro, no public IP, IAM role for SSM</span></li>
+        </ul>
+      </div>
+      <div class="card green-border">
+        <h3>Key Design Decisions</h3>
+        <table style="margin-top:8px">
+          <thead><tr><th>Decision</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td>EC2 in private subnet</td><td>No direct internet exposure — outbound via NAT only</td></tr>
+            <tr><td>No port 22 open</td><td>SSM replaces SSH — no keys, all sessions logged in CloudTrail</td></tr>
+            <tr><td>Egress 443 only</td><td>Least-privilege outbound — SSM only needs HTTPS</td></tr>
+            <tr><td>NAT in public subnet</td><td>Private instances reach SSM endpoints without being reachable</td></tr>
+            <tr><td>IAM instance profile</td><td>Temporary rotating credentials — no hardcoded access keys</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ARCHITECTURE -->
+  <section id="architecture">
+    <h2><span class="h2-icon">🏗</span> Architecture</h2>
+    <div class="mermaid-wrap" style="margin-bottom:20px">
+      <div class="mermaid">
+graph TB
+    Internet(["🌐 Internet"])
+    subgraph AWS ["☁️ AWS Cloud — us-east-1"]
+      subgraph VPC ["🏗️ VPC: aws-cert-study-vpc  10.0.0.0/16"]
+        IGW["🔀 Internet Gateway"]
+        subgraph Public ["📦 Public Subnet  10.0.1.0/24  us-east-1a"]
+          NAT["🔀 NAT Gateway\nElastic IP"]
+          PublicRTB["📋 Public Route Table\n0.0.0.0/0 → IGW"]
+        end
+        subgraph Private ["📦 Private Subnet  10.0.2.0/24  us-east-1b"]
+          EC2["💻 EC2 t3.micro\nAmazon Linux 2023\nNo Public IP"]
+          PrivateRTB["📋 Private Route Table\n0.0.0.0/0 → NAT GW"]
+        end
+        SG["🛡️ Security Group\nInbound: none  Egress: 443 only"]
+      end
+      SSM["🔧 SSM Session Manager"]
+      IAM["🔐 IAM Role\nAmazonSSMManagedInstanceCore"]
+    end
+    Internet -->|inbound| IGW
+    IGW --> Public
+    EC2 -->|outbound via| NAT
+    NAT -->|Elastic IP| Internet
+    SSM -->|HTTPS 443| EC2
+    IAM -->|attached to| EC2
+    SG -->|applied to| EC2
+    style Internet fill:#1e3a5f,stroke:#60a5fa,color:#e2e8f0
+    style EC2 fill:#7a3500,stroke:#FF9900,color:#e2e8f0
+    style NAT fill:#7a3500,stroke:#FF9900,color:#e2e8f0
+    style IGW fill:#7a3500,stroke:#FF9900,color:#e2e8f0
+    style SSM fill:#052e16,stroke:#34d399,color:#e2e8f0
+    style IAM fill:#2d1b69,stroke:#a78bfa,color:#e2e8f0
+    style SG fill:#3d0000,stroke:#f87171,color:#e2e8f0
+      </div>
+    </div>
+
+    <div class="card aws-border">
+      <h3>IGW vs NAT Gateway</h3>
+      <table style="margin-top:12px">
+        <thead><tr><th></th><th>Internet Gateway</th><th>NAT Gateway</th></tr></thead>
+        <tbody>
+          <tr><td>Traffic direction</td><td>Inbound + Outbound</td><td>Outbound only</td></tr>
+          <tr><td>Who uses it</td><td>Public subnet instances</td><td>Private subnet instances</td></tr>
+          <tr><td>Public IP</td><td>Instance needs its own EIP</td><td>NAT GW holds the Elastic IP</td></tr>
+          <tr><td>Cost</td><td>Free</td><td>$0.045/hr + $0.045/GB</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- DEPLOY PROCESS -->
+  <section id="process">
+    <h2><span class="h2-icon">🚀</span> Deployment Process</h2>
+    <div class="grid-2">
+      <div>
+        <div class="mermaid-wrap" style="margin-bottom:20px">
+          <div class="mermaid">
+flowchart TD
+    A([▶ Run deploy.sh]) --> B[Validate AWS CLI\n+ Credentials]
+    B --> C[Create VPC\n10.0.0.0/16\nDNS Hostnames ON]
+    C --> D[Create Public Subnet\n10.0.1.0/24 · us-east-1a]
+    D --> E[Create Private Subnet\n10.0.2.0/24 · us-east-1b]
+    E --> F[Create + Attach\nInternet Gateway]
+    F --> G[Create Public\nRoute Table\n0.0.0.0/0 → IGW]
+    G --> H[Allocate Elastic IP\nCreate NAT Gateway\n~60s]
+    H --> I[Create Private\nRoute Table\n0.0.0.0/0 → NAT GW]
+    I --> J[Create Security Group\nInbound: none\nEgress: 443 only]
+    J --> K[Create IAM Role\n+ Instance Profile\nAmazonSSMManagedInstanceCore]
+    K --> L[Launch EC2\nin Private Subnet\nNo Public IP]
+    L --> M([✅ Ready\nSSM Connect Command Printed])
+    style A fill:#0c3a4a,stroke:#22d3ee,color:#e2e8f0
+    style M fill:#052e16,stroke:#34d399,color:#e2e8f0
+    style H fill:#7a3500,stroke:#FF9900,color:#e2e8f0
+    style K fill:#2d1b69,stroke:#a78bfa,color:#e2e8f0
+    style J fill:#3d0000,stroke:#f87171,color:#e2e8f0
+          </div>
+        </div>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-left"><div class="step-num">1</div><div class="step-line"></div></div>
+          <div class="step-content">
+            <div class="step-title">Create VPC</div>
+            <div class="step-desc">Custom VPC with CIDR 10.0.0.0/16. DNS hostnames enabled — required for SSM agent to resolve AWS endpoints.</div>
+            <div class="step-tags"><span class="tag cyan">VPC</span><span class="tag green">DNS Hostnames</span></div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-left"><div class="step-num">2</div><div class="step-line"></div></div>
+          <div class="step-content">
+            <div class="step-title">Create Subnets</div>
+            <div class="step-desc">Public subnet (10.0.1.0/24) in us-east-1a and private subnet (10.0.2.0/24) in us-east-1b. Different AZs for resilience.</div>
+            <div class="step-tags"><span class="tag cyan">Public</span><span class="tag purple">Private</span><span class="tag green">Multi-AZ</span></div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-left"><div class="step-num">3</div><div class="step-line"></div></div>
+          <div class="step-content">
+            <div class="step-title">Internet Gateway + Public Route Table</div>
+            <div class="step-desc">IGW attached to VPC. Public route table routes 0.0.0.0/0 → IGW and is associated with the public subnet.</div>
+            <div class="step-tags"><span class="tag aws">IGW</span><span class="tag cyan">Route Table</span></div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-left"><div class="step-num">4</div><div class="step-line"></div></div>
+          <div class="step-content">
+            <div class="step-title">NAT Gateway</div>
+            <div class="step-desc">Elastic IP allocated, NAT Gateway created in the public subnet. Takes ~60 seconds. Private route table routes 0.0.0.0/0 → NAT GW.</div>
+            <div class="step-tags"><span class="tag aws">NAT GW</span><span class="tag red">$0.045/hr</span></div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-left"><div class="step-num">5</div><div class="step-line"></div></div>
+          <div class="step-content">
+            <div class="step-title">Security Group</div>
+            <div class="step-desc">Zero inbound rules. Default allow-all egress replaced with port 443 only — the minimum SSM needs.</div>
+            <div class="step-tags"><span class="tag red">No Port 22</span><span class="tag green">Egress 443</span></div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-left"><div class="step-num">6</div><div class="step-line"></div></div>
+          <div class="step-content">
+            <div class="step-title">IAM Role + Instance Profile</div>
+            <div class="step-desc">Role with AmazonSSMManagedInstanceCore attached. Instance profile links the role to EC2. 10 second wait for IAM propagation.</div>
+            <div class="step-tags"><span class="tag purple">IAM Role</span><span class="tag cyan">SSM Policy</span></div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-left"><div class="step-num">7</div><div class="step-line"></div></div>
+          <div class="step-content">
+            <div class="step-title">Launch EC2 in Private Subnet</div>
+            <div class="step-desc">Amazon Linux 2023, t3.micro, placed in the private subnet with no public IP. Reaches SSM endpoints via NAT Gateway.</div>
+            <div class="step-cmd">aws ssm start-session --target $INSTANCE_ID --region us-east-1</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICES -->
+  <section id="services">
+    <h2><span class="h2-icon">⚙️</span> AWS Services Deep Dive</h2>
+    <div class="grid-3" style="margin-bottom:20px">
+      <div class="service-card">
+        <div class="service-icon">VPC</div>
+        <div class="service-name">Amazon VPC</div>
+        <div class="service-desc">Isolated virtual network. Spans all AZs in a region. Custom CIDR, subnets, route tables, and gateways give full control over network topology.</div>
+        <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:4px;justify-content:center">
+          <span class="tag cyan">CIDR 10.0.0.0/16</span><span class="tag green">DNS Hostnames</span>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">EC2</div>
+        <div class="service-name">Amazon EC2</div>
+        <div class="service-desc">t3.micro burstable instance on Amazon Linux 2023. Nitro hypervisor. No public IP — all access via SSM through NAT Gateway.</div>
+        <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:4px;justify-content:center">
+          <span class="tag aws">t3.micro</span><span class="tag green">Private Subnet</span>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">SG</div>
+        <div class="service-name">Security Groups</div>
+        <div class="service-desc">Stateful firewall at the instance (ENI) level. Return traffic automatically allowed. Zero inbound rules — only egress 443 permitted.</div>
+        <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:4px;justify-content:center">
+          <span class="tag red">No Inbound</span><span class="tag green">Stateful</span>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">SSM</div>
+        <div class="service-name">Systems Manager</div>
+        <div class="service-desc">Session Manager replaces SSH entirely. No open ports, no key pairs. Sessions authenticated via IAM, logged in CloudTrail.</div>
+        <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:4px;justify-content:center">
+          <span class="tag green">No Port 22</span><span class="tag purple">IAM Auth</span>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">IAM</div>
+        <div class="service-name">AWS IAM</div>
+        <div class="service-desc">Instance profile attaches the SSM role to EC2. IMDS provides temporary, auto-rotating credentials. No hardcoded access keys on the instance.</div>
+        <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:4px;justify-content:center">
+          <span class="tag purple">Instance Profile</span><span class="tag green">Rotating Creds</span>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">NAT</div>
+        <div class="service-name">NAT Gateway</div>
+        <div class="service-desc">Managed NAT in public subnet. Holds the Elastic IP. Allows private subnet instances to reach SSM endpoints without being publicly reachable.</div>
+        <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:4px;justify-content:center">
+          <span class="tag aws">Elastic IP</span><span class="tag red">$0.045/hr</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card aws-border">
+      <h3>Resource Inventory</h3>
+      <table style="margin-top:12px">
+        <thead><tr><th>Resource</th><th>Name</th><th>Key Config</th><th>Cost</th></tr></thead>
+        <tbody>
+          <tr><td>VPC</td><td><code>aws-cert-study-vpc</code></td><td>10.0.0.0/16, DNS hostnames ON</td><td>Free</td></tr>
+          <tr><td>Public Subnet</td><td><code>aws-cert-study-public</code></td><td>10.0.1.0/24, us-east-1a</td><td>Free</td></tr>
+          <tr><td>Private Subnet</td><td><code>aws-cert-study-private</code></td><td>10.0.2.0/24, us-east-1b</td><td>Free</td></tr>
+          <tr><td>Internet Gateway</td><td><code>aws-cert-study-igw</code></td><td>Attached to VPC</td><td>Free</td></tr>
+          <tr><td>NAT Gateway</td><td><code>aws-cert-study-nat</code></td><td>Public subnet, Elastic IP</td><td style="color:var(--red)">$0.045/hr</td></tr>
+          <tr><td>Security Group</td><td><code>aws-cert-study-sg</code></td><td>0 inbound, egress 443 only</td><td>Free</td></tr>
+          <tr><td>EC2 Instance</td><td><code>aws-cert-study-ec2</code></td><td>t3.micro, AL2023, private subnet</td><td>Free tier</td></tr>
+          <tr><td>IAM Role</td><td><code>aws-cert-study-ssm-role</code></td><td>AmazonSSMManagedInstanceCore</td><td>Free</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- KEY CONCEPTS -->
+  <section id="concepts">
+    <h2><span class="h2-icon">🧠</span> Key Concepts Practiced</h2>
+    <div class="grid-2">
+      <div class="card cyan-border">
+        <h3>VPC & Networking</h3>
+        <ul class="concept-list">
+          <li><span class="check">✓</span><span><strong>What makes a subnet public?</strong> — A route to an IGW in its route table. Not a setting on the subnet itself.</span></li>
+          <li><span class="check">✓</span><span><strong>VPC scope</strong> — Spans all AZs in a region. Subnets are locked to a single AZ.</span></li>
+          <li><span class="check">✓</span><span><strong>IGW vs NAT GW</strong> — IGW handles inbound+outbound for public instances. NAT GW handles outbound-only for private instances.</span></li>
+          <li><span class="check">✓</span><span><strong>AWS Reserved IPs</strong> — First 4 and last 1 IP in every subnet are reserved by AWS. A /24 gives you 251 usable IPs.</span></li>
+        </ul>
+      </div>
+      <div class="card red-border">
+        <h3>Security Groups</h3>
+        <ul class="concept-list">
+          <li><span class="check">✓</span><span><strong>Stateful</strong> — Return traffic automatically allowed. If inbound 443 is permitted, responses flow back without an explicit outbound rule.</span></li>
+          <li><span class="check">✓</span><span><strong>Default behavior</strong> — New SGs deny all inbound, allow all outbound. We removed the allow-all egress and replaced with port 443 only.</span></li>
+          <li><span class="check">✓</span><span><strong>SG vs NACL</strong> — SGs are stateful, instance-level. NACLs are stateless, subnet-level. Rules evaluated differently.</span></li>
+          <li><span class="check">✓</span><span><strong>No deny rules</strong> — Security Groups only have allow rules. Everything not explicitly allowed is implicitly denied.</span></li>
+        </ul>
+      </div>
+      <div class="card purple-border">
+        <h3>IAM & Identity</h3>
+        <ul class="concept-list">
+          <li><span class="check">✓</span><span><strong>IAM Roles vs Users</strong> — Roles are assumed by services. EC2 uses a role via an instance profile to make API calls without stored credentials.</span></li>
+          <li><span class="check">✓</span><span><strong>Instance Metadata Service</strong> — <code>169.254.169.254</code> provides temporary, auto-rotating credentials to the instance at runtime.</span></li>
+          <li><span class="check">✓</span><span><strong>AmazonSSMManagedInstanceCore</strong> — Minimum policy for SSM. Grants <code>ssm:*</code>, <code>ssmmessages:*</code>, and <code>ec2messages:*</code>.</span></li>
+          <li><span class="check">✓</span><span><strong>Least privilege</strong> — No AdministratorAccess on the instance. Only what SSM needs, nothing more.</span></li>
+        </ul>
+      </div>
+      <div class="card green-border">
+        <h3>SSM Session Manager</h3>
+        <ul class="concept-list">
+          <li><span class="check">✓</span><span><strong>No SSH required</strong> — Session Manager connects over HTTPS (443) to SSM endpoints. No inbound ports needed on the instance.</span></li>
+          <li><span class="check">✓</span><span><strong>IAM-controlled access</strong> — Who can connect is governed by IAM policies on the caller, not SSH keys on the instance.</span></li>
+          <li><span class="check">✓</span><span><strong>CloudTrail logged</strong> — Every session start/end is recorded. Optional: log session output to S3 or CloudWatch Logs.</span></li>
+          <li><span class="check">✓</span><span><strong>Agent registration</strong> — SSM agent on the instance reaches out to SSM endpoints via NAT GW. Takes 1-2 minutes after launch.</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- COST -->
+  <section id="cost">
+    <h2><span class="h2-icon">💰</span> Cost Breakdown</h2>
+    <div class="grid-2">
+      <div class="cost-box">
+        <div class="cost-price">$0.05</div>
+        <div class="cost-sub">Per hour while running (NAT Gateway is the only billable resource)</div>
+        <p style="color:var(--muted);font-size:0.85rem;margin-top:16px">EC2 t3.micro is free tier eligible (750 hrs/month). NAT Gateway at $0.045/hr is the cost driver — always run cleanup.sh after the lab.</p>
+      </div>
+      <div class="chart-wrap">
+        <h3 style="margin-bottom:16px">Hourly Cost by Resource</h3>
+        <canvas id="costChart"></canvas>
+      </div>
+    </div>
+    <div class="card red-border" style="margin-top:20px">
+      <h3>Cost Reference</h3>
+      <table style="margin-top:12px">
+        <thead><tr><th>Resource</th><th>Cost</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>EC2 t3.micro</td><td>$0.0104/hr</td><td>Free tier: 750 hrs/month first 12 months</td></tr>
+          <tr><td>NAT Gateway</td><td style="color:var(--red)">$0.045/hr + $0.045/GB</td><td>Biggest cost — delete immediately after lab</td></tr>
+          <tr><td>Elastic IP</td><td>Free when attached</td><td>Attached to NAT GW during lab — no charge</td></tr>
+          <tr><td>VPC, Subnets, IGW, SGs</td><td>Free</td><td>No hourly charges</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- COMMANDS -->
+  <section id="commands">
+    <h2><span class="h2-icon">💻</span> Commands Reference</h2>
+    <div class="grid-2">
+      <div class="card green-border">
+        <h3>Deploy</h3>
+        <pre>cd ~/workspace/ai-terminal-workflow
+bash projects/02-ec2-vpc-security-groups/scripts/deploy.sh</pre>
+      </div>
+      <div class="card red-border">
+        <h3>Cleanup (always run after lab)</h3>
+        <pre>bash projects/02-ec2-vpc-security-groups/scripts/cleanup.sh
+
+# Verify nothing remains
+aws resourcegroupstaggingapi get-resources \
+  --tag-filters Key=Project,Values=aws-cert-study \
+  --query 'ResourceTagMappingList[].ResourceARN'</pre>
+      </div>
+      <div class="card cyan-border">
+        <h3>Connect + Verify</h3>
+        <pre># Connect via SSM (no SSH key needed)
+aws ssm start-session \
+  --target $INSTANCE_ID \
+  --region us-east-1
+
+# Inside the session:
+curl -s http://169.254.169.254/latest/meta-data/instance-id
+curl -s http://169.254.169.254/latest/meta-data/instance-type
+curl -s https://checkip.amazonaws.com   # Shows NAT GW Elastic IP
+ss -tlnp | grep :22                     # Returns nothing</pre>
+      </div>
+      <div class="card purple-border">
+        <h3>Check SSM Registration</h3>
+        <pre># Wait ~2 min after launch, then:
+aws ssm describe-instance-information \
+  --filters "Key=InstanceIds,Values=$INSTANCE_ID" \
+  --query 'InstanceInformationList[0].PingStatus' \
+  --output text \
+  --region us-east-1
+# Expected: Online</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREENSHOTS -->
+  <section id="screenshots">
+    <h2><span class="h2-icon">📸</span> Lab Screenshots</h2>
+    <div class="screenshot-grid">
+      <div class="screenshot-card">
+        <img src="docs/screenshots/01-vpc-created.png" alt="VPC created" />
+        <div class="screenshot-label">01 — VPC created (10.0.0.0/16)</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="docs/screenshots/02-subnets-created.png" alt="Subnets created" />
+        <div class="screenshot-label">02 — Public + private subnets</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="docs/screenshots/03-route-table-igw.png" alt="Route table IGW" />
+        <div class="screenshot-label">03 — Public route table → IGW</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="docs/screenshots/04-nat-gateway-available.png" alt="NAT Gateway available" />
+        <div class="screenshot-label">04 — NAT Gateway available</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="docs/screenshots/05-security-group-rules.png" alt="Security group rules" />
+        <div class="screenshot-label">05 — Security group (no port 22)</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="docs/screenshots/06-iam-role-ssm-policy.png" alt="IAM role SSM policy" />
+        <div class="screenshot-label">06 — IAM role with SSM policy</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="docs/screenshots/07-ec2-instance-running.png" alt="EC2 instance running" />
+        <div class="screenshot-label">07 — EC2 instance running (private subnet)</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="docs/screenshots/08-ssm-session-active.png" alt="SSM session active" />
+        <div class="screenshot-label">08 — SSM session active</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="docs/screenshots/09-ssm-session-terminal.png" alt="SSM session terminal" />
+        <div class="screenshot-label">09 — Terminal verification (no port 22)</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="docs/screenshots/10-cleanup-verified.png" alt="Cleanup verified" />
+        <div class="screenshot-label">10 — Cleanup verified, zero resources</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p>AWS Lab 02 — EC2 + VPC + Security Groups + SSM</p>
+  <p style="margin-top:6px">
+    <a href="../../index.html">← Back to Portfolio</a> &nbsp;|&nbsp;
+    <a href="../project-tracker/">Project Tracker</a> &nbsp;|&nbsp;
+    <a href="https://github.com/oumoeurtmm-code/ai-terminal-workflow/tree/master/projects/02-ec2-vpc-security-groups" target="_blank">GitHub Repo</a>
+  </p>
+</footer>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      primaryColor: '#0c3a4a',
+      primaryTextColor: '#e2e8f0',
+      primaryBorderColor: '#22d3ee',
+      lineColor: '#94a3b8',
+      secondaryColor: '#1a2235',
+      tertiaryColor: '#111827',
+      edgeLabelBackground: '#111827'
+    }
+  });
+
+  new Chart(document.getElementById('costChart'), {
+    type: 'bar',
+    data: {
+      labels: ['EC2 t3.micro', 'NAT Gateway', 'Elastic IP', 'VPC/Subnets/IGW/SG'],
+      datasets: [{
+        label: 'Hourly Cost ($)',
+        data: [0.0104, 0.045, 0, 0],
+        backgroundColor: ['rgba(52,211,153,0.6)', 'rgba(248,113,113,0.6)', 'rgba(52,211,153,0.3)', 'rgba(52,211,153,0.3)'],
+        borderColor: ['#34d399', '#f87171', '#34d399', '#34d399'],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e2d45' } },
+        y: {
+          ticks: { color: '#94a3b8', callback: v => '$' + v.toFixed(3) },
+          grid: { color: '#1e2d45' },
+          title: { display: true, text: 'Cost per Hour (USD)', color: '#94a3b8' }
+        }
+      },
+      plugins: { legend: { labels: { color: '#94a3b8' } } }
+    }
+  });
+</script>
+</body>
+</html>

@@ -141,7 +141,7 @@ const DATA = [
     tier: "Beginner", accent: "#38bdf8", num: "01",
     projects: [
       { id: 1,  category: "AWS",          title: "Lab 01 — S3 Static Website + CloudFront + IAM + CloudWatch", desc: "Host a static website on S3 with CloudFront CDN, OAC, IAM policies, access logging, and CloudWatch monitoring.", tags: ["AWS","S3","CloudFront","IAM","CloudWatch"], link: "https://github.com/oumoeurtmm-code/ai-terminal-workflow" },
-      { id: 2,  category: "AWS",          title: "Lab 02 — EC2 + VPC + Security Groups",                       desc: "Deploy a hardened EC2 instance in a custom VPC with public/private subnets, NAT Gateway, and SSM Session Manager — no open SSH.", tags: ["AWS","EC2","VPC","SSM","Security Groups"], link: "https://github.com/oumoeurtmm-code/ai-terminal-workflow" },
+      { id: 2,  category: "AWS",          title: "Lab 02 — EC2 + VPC + Security Groups",                       desc: "Deploy a hardened EC2 instance in a custom VPC with public/private subnets, NAT Gateway, and SSM Session Manager — no open SSH.", tags: ["AWS","EC2","VPC","SSM","Security Groups"], link: "https://oumoeurtmm-code.github.io/projects/02-ec2-vpc-security-groups/" },
       { id: 3,  category: "AWS",          title: "Lab 03 — RDS + EC2 Two-Tier App",                            desc: "Build a two-tier architecture with EC2 app server and RDS database in a private subnet. Secrets Manager for credentials.", tags: ["AWS","RDS","EC2","Secrets Manager"] },
       { id: 16, category: "IT Automation",title: "n8n + OpenCode Multi-Model IT Automation",                   desc: "Orchestrate Claude Code, Gemini, Grok, and Perplexity via OpenCode + n8n for provisioning, access control, and cloud ops.", tags: ["n8n","OpenCode","Claude Code","Okta","Entra"], link: "https://oumoeurtmm-code.github.io/projects/n8n-opencode-it-automation/" },
       { id: 10, category: "FinOps",       title: "AWS Cost Explorer Dashboard",                                desc: "Set up Cost Explorer, create custom cost reports, and build a spending dashboard broken down by service.",  tags: ["FinOps","Cost Explorer","AWS"] },
@@ -187,7 +187,7 @@ const statuses = {};
 DATA.forEach(t => t.projects.forEach(p => statuses[p.id] = "Planned"));
 // Set actual statuses for completed/in-progress work
 statuses[1]  = "Complete";     // Lab 01 — S3 Static Website ✅
-statuses[2]  = "In Progress";  // Lab 02 — EC2 + VPC 🔵
+statuses[2]  = "Complete";     // Lab 02 — EC2 + VPC ✅
 statuses[16] = "In Progress";  // n8n + OpenCode 🔵
 const collapsed = { Beginner: false, Intermediate: false, Advanced: false };
 let activeFilter = "All";
