@@ -550,7 +550,7 @@ aws sts get-caller-identity
 
 # 3. Run deploy script
 bash ~/workspace/ai-terminal-workflow/ \
-  aws-projects/01-static-website-aws-fundamentals/ \
+  projects/01-static-website-aws-fundamentals/ \
   scripts/deploy.sh</pre>
       </div>
       <div class="card red-border">
@@ -558,12 +558,12 @@ bash ~/workspace/ai-terminal-workflow/ \
         <pre>
 # Load saved resource IDs
 source ~/workspace/ai-terminal-workflow/ \
-  aws-projects/01-static-website-aws-fundamentals/ \
+  projects/01-static-website-aws-fundamentals/ \
   .env.project
 
 # Run cleanup script
 bash ~/workspace/ai-terminal-workflow/ \
-  aws-projects/01-static-website-aws-fundamentals/ \
+  projects/01-static-website-aws-fundamentals/ \
   scripts/cleanup.sh
 
 # Verify nothing remains
@@ -604,7 +604,7 @@ curl -I http://$CF_DOMAIN/index.html</pre>
     <div class="card aws-border" style="margin-top:20px">
       <h3>Source Code</h3>
       <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:12px">
-        <a href="https://github.com/oumoeurtmm-code/ai-terminal-workflow/tree/master/aws-projects/01-static-website-aws-fundamentals" target="_blank" style="color:var(--accent);text-decoration:none;font-size:0.9rem">→ deploy.sh + cleanup.sh on GitHub</a>
+        <a href="https://github.com/oumoeurtmm-code/ai-terminal-workflow/tree/master/projects/01-static-website-aws-fundamentals" target="_blank" style="color:var(--accent);text-decoration:none;font-size:0.9rem">→ deploy.sh + cleanup.sh on GitHub</a>
         <a href="https://github.com/oumoeurtmm-code/90s-japanese-supercars-site" target="_blank" style="color:var(--accent2);text-decoration:none;font-size:0.9rem">→ 90s Japanese Supercars site repo</a>
         <a href="../../projects/project-tracker/" style="color:var(--accent3);text-decoration:none;font-size:0.9rem">→ View all labs in Project Tracker</a>
       </div>
