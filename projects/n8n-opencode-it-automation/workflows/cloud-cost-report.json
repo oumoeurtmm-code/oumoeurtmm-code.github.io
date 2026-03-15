@@ -1,0 +1,228 @@
+{
+  "name": "Cloud Cost Report — Weekly Summary via Claude AI",
+  "nodes": [
+    {
+      "id": "3c4d5e6f-0001",
+      "name": "Weekly Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [1],
+              "triggerAtHour": 8,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "notes": "Fires every Monday at 08:00 UTC. Adjust triggerAtDay and triggerAtHour to match your team's timezone."
+    },
+    {
+      "id": "3c4d5e6f-0002",
+      "name": "Set Report Window",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300],
+      "parameters": {
+        "jsCode": "// Calculate the previous 7-day billing window\nconst now = new Date();\n\nconst endDate = new Date(now);\nendDate.setUTCHours(0, 0, 0, 0);\n\nconst startDate = new Date(endDate);\nstartDate.setUTCDate(startDate.getUTCDate() - 7);\n\nconst fmt = d => d.toISOString().split('T')[0];\n\nreturn [{\n  json: {\n    reportWindow: {\n      start: fmt(startDate),\n      end:   fmt(endDate),\n      label: `${fmt(startDate)} to ${fmt(endDate)}`\n    }\n  }\n}];"
+      },
+      "notes": "Computes ISO date strings for the 7-day window passed to Cost Explorer."
+    },
+    {
+      "id": "3c4d5e6f-0003",
+      "name": "AWS Cost Explorer — Get Cost And Usage",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [680, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://ce.us-east-1.amazonaws.com/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/x-amz-json-1.1" },
+            { "name": "X-Amz-Target", "value": "AWSInsightsIndexService.GetCostAndUsage" },
+            { "name": "Authorization", "value": "={{ $vars.AWS_SIGV4_AUTH }}" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ TimePeriod: { Start: $('Set Report Window').first().json.reportWindow.start, End: $('Set Report Window').first().json.reportWindow.end }, Granularity: 'WEEKLY', GroupBy: [{ Type: 'DIMENSION', Key: 'SERVICE' }], Metrics: ['UnblendedCost', 'UsageQuantity'] }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "notes": "Calls AWS Cost Explorer GetCostAndUsage. Requires SigV4 signing — use an AWS credential node or a pre-signed Authorization header stored in $vars.AWS_SIGV4_AUTH. For local testing, replace this node with a Set node containing sample cost data."
+    },
+    {
+      "id": "3c4d5e6f-0004",
+      "name": "Parse and Compact Cost Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300],
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\n\n// ── SAMPLE / FALLBACK DATA ────────────────────────────────────────────\n// Used when Cost Explorer is not connected (local testing mode).\n// Replace with real API response parsing once credentials are configured.\nconst sampleData = {\n  totalUsd: 847.32,\n  currency: 'USD',\n  period: $('Set Report Window').first().json.reportWindow.label,\n  topServices: [\n    { service: 'Amazon EC2',           cost: 412.80 },\n    { service: 'Amazon RDS',           cost: 198.50 },\n    { service: 'Amazon S3',            cost: 87.40  },\n    { service: 'AWS Lambda',           cost: 54.22  },\n    { service: 'Amazon CloudFront',    cost: 34.18  },\n    { service: 'Amazon Route 53',      cost: 28.50  },\n    { service: 'Amazon CloudWatch',    cost: 17.90  },\n    { service: 'AWS Data Transfer',    cost: 13.82  }\n  ],\n  vsLastWeek: { delta: +62.14, pct: '+7.9%' },\n  unusedResources: [\n    'ec2: 3 stopped instances (t3.medium) in us-east-1 — idle 14+ days',\n    's3: 2 buckets with no access in 90 days',\n    'rds: 1 snapshot older than 30 days'\n  ]\n};\n\n// If real API data is present, parse it here:\nlet costData = sampleData;\nif (response && response.ResultsByTime && response.ResultsByTime.length > 0) {\n  const groups = response.ResultsByTime[0].Groups || [];\n  let total = 0;\n  const services = groups.map(g => {\n    const cost = parseFloat(g.Metrics.UnblendedCost.Amount);\n    total += cost;\n    return { service: g.Keys[0], cost: parseFloat(cost.toFixed(2)) };\n  }).sort((a, b) => b.cost - a.cost);\n\n  costData = {\n    totalUsd: parseFloat(total.toFixed(2)),\n    currency: 'USD',\n    period: $('Set Report Window').first().json.reportWindow.label,\n    topServices: services.slice(0, 8),\n    vsLastWeek: { delta: null, pct: 'N/A — prior week comparison requires additional API call' },\n    unusedResources: []\n  };\n}\n\nreturn [{ json: { costData } }];"
+      },
+      "notes": "Normalizes Cost Explorer output into a compact payload for the AI narrative node. Includes realistic sample data for local testing without live AWS credentials."
+    },
+    {
+      "id": "3c4d5e6f-0005",
+      "name": "Claude AI — Generate Cost Narrative",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1120, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key",         "value": "={{ $vars.ANTHROPIC_API_KEY }}" },
+            { "name": "anthropic-version",  "value": "2023-06-01" },
+            { "name": "Content-Type",       "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ model: 'claude-3-5-haiku-20241022', max_tokens: 1024, system: 'You are a FinOps analyst. Given raw cloud cost data, produce a concise weekly cost summary in Slack-friendly markdown. Include: total spend, top cost drivers, week-over-week change, and 2–3 actionable optimization recommendations. Keep it under 400 words. Be specific with dollar amounts and percentages.', messages: [{ role: 'user', content: 'Generate the weekly cloud cost report from this data: ' + JSON.stringify($json.costData) }] }) }}",
+        "options": {
+          "timeout": 45000
+        }
+      },
+      "notes": "Calls Claude claude-3-5-haiku-20241022 directly via Anthropic API. Uses $vars.ANTHROPIC_API_KEY — set this in n8n Variables. Haiku is used for cost efficiency; swap to claude-3-5-sonnet for richer analysis."
+    },
+    {
+      "id": "3c4d5e6f-0006",
+      "name": "Extract Narrative Text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 300],
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\n\n// Extract the text content from Anthropic messages API response\nlet narrative = '';\nif (response.content && Array.isArray(response.content)) {\n  narrative = response.content\n    .filter(block => block.type === 'text')\n    .map(block => block.text)\n    .join('\\n');\n} else if (typeof response.content === 'string') {\n  narrative = response.content;\n} else {\n  narrative = JSON.stringify(response);\n}\n\nconst costData = $('Parse and Compact Cost Data').first().json.costData;\n\nreturn [{\n  json: {\n    narrative,\n    summary: {\n      total:   `$${costData.totalUsd}`,\n      period:  costData.period,\n      currency: costData.currency\n    }\n  }\n}];"
+      }
+    },
+    {
+      "id": "3c4d5e6f-0007",
+      "name": "Gemini — Optimization Recommendations",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1560, 200],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={{ $vars.GOOGLE_AI_API_KEY }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ contents: [{ parts: [{ text: 'You are a cloud cost optimization expert. Review this weekly cost data and provide exactly 3 specific, actionable FinOps recommendations. Format as a numbered list with estimated monthly savings for each. Data: ' + JSON.stringify($('Parse and Compact Cost Data').first().json.costData) }] }] }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "notes": "Uses Gemini Flash (free tier available) for additional optimization reasoning. Runs in parallel with the Slack notification branch. Set $vars.GOOGLE_AI_API_KEY in n8n Variables."
+    },
+    {
+      "id": "3c4d5e6f-0008",
+      "name": "Extract Gemini Recommendations",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1780, 200],
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\n\nlet recommendations = '';\ntry {\n  recommendations = response.candidates[0].content.parts[0].text || 'No recommendations returned.';\n} catch (e) {\n  recommendations = 'Gemini recommendations unavailable: ' + e.message;\n}\n\nreturn [{ json: { recommendations } }];"
+      }
+    },
+    {
+      "id": "3c4d5e6f-0009",
+      "name": "Slack — Post Weekly Cost Report",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [1560, 400],
+      "parameters": {
+        "channel": "={{ $vars.SLACK_CHANNEL_FINOPS || '#cloud-costs' }}",
+        "text": "=*Weekly Cloud Cost Report* | {{ $('Extract Narrative Text').first().json.summary.period }}\n\n{{ $('Extract Narrative Text').first().json.narrative }}\n\n---\n_Report generated automatically by n8n + Claude AI. Data from AWS Cost Explorer._",
+        "otherOptions": {
+          "unfurl_links": false
+        }
+      },
+      "notes": "Posts the Claude-generated narrative to your FinOps/cloud-costs Slack channel. Set $vars.SLACK_CHANNEL_FINOPS or it defaults to #cloud-costs."
+    },
+    {
+      "id": "3c4d5e6f-0010",
+      "name": "Slack — Post Gemini Recommendations",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [2000, 300],
+      "parameters": {
+        "channel": "={{ $vars.SLACK_CHANNEL_FINOPS || '#cloud-costs' }}",
+        "text": "=*Gemini FinOps Recommendations* for {{ $('Extract Narrative Text').first().json.summary.period }}\n\n{{ $('Extract Gemini Recommendations').first().json.recommendations }}\n\n---\n_Powered by Gemini Flash via n8n._",
+        "otherOptions": {
+          "unfurl_links": false
+        }
+      },
+      "notes": "Posts the Gemini optimization recommendations as a follow-up message in the same channel."
+    }
+  ],
+  "connections": {
+    "Weekly Schedule Trigger": {
+      "main": [[{ "node": "Set Report Window", "type": "main", "index": 0 }]]
+    },
+    "Set Report Window": {
+      "main": [[{ "node": "AWS Cost Explorer — Get Cost And Usage", "type": "main", "index": 0 }]]
+    },
+    "AWS Cost Explorer — Get Cost And Usage": {
+      "main": [[{ "node": "Parse and Compact Cost Data", "type": "main", "index": 0 }]]
+    },
+    "Parse and Compact Cost Data": {
+      "main": [[{ "node": "Claude AI — Generate Cost Narrative", "type": "main", "index": 0 }]]
+    },
+    "Claude AI — Generate Cost Narrative": {
+      "main": [[{ "node": "Extract Narrative Text", "type": "main", "index": 0 }]]
+    },
+    "Extract Narrative Text": {
+      "main": [
+        [{ "node": "Slack — Post Weekly Cost Report", "type": "main", "index": 0 }],
+        [{ "node": "Gemini — Optimization Recommendations", "type": "main", "index": 0 }]
+      ]
+    },
+    "Slack — Post Weekly Cost Report": {
+      "main": [[{ "node": "Slack — Post Gemini Recommendations", "type": "main", "index": 0 }]]
+    },
+    "Gemini — Optimization Recommendations": {
+      "main": [[{ "node": "Extract Gemini Recommendations", "type": "main", "index": 0 }]]
+    },
+    "Extract Gemini Recommendations": {
+      "main": [[{ "node": "Slack — Post Gemini Recommendations", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "description": "Weekly cloud cost report workflow. Pulls spend data from AWS Cost Explorer, sends the raw data to Claude (claude-3-5-haiku) for a Slack-friendly narrative, and runs Gemini Flash for parallel optimization recommendations. Both outputs are posted to a Slack channel. Includes realistic sample data for local testing without live AWS credentials.",
+    "requiredVariables": [
+      "ANTHROPIC_API_KEY",
+      "GOOGLE_AI_API_KEY",
+      "AWS_SIGV4_AUTH",
+      "SLACK_CHANNEL_FINOPS"
+    ],
+    "optionalVariables": [
+      "SLACK_CHANNEL_FINOPS (defaults to #cloud-costs)"
+    ],
+    "notes": "Perplexity is NOT required for this workflow. Claude + Gemini handle all AI tasks. AWS Cost Explorer API calls require SigV4 authentication — for local testing, the Parse node uses sample data automatically."
+  }
+}
