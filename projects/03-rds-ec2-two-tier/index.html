@@ -139,7 +139,7 @@
   <h1>RDS + EC2 Two-Tier App</h1>
   <p>Deploy a two-tier architecture with an EC2 app server in a public subnet and a MySQL RDS database in private subnets. Credentials managed by Secrets Manager — no hardcoded passwords.</p>
   <div style="margin-top:20px">
-    <span class="badge planned">🔵 In Progress</span>
+    <span class="badge" style="color:var(--green);border-color:rgba(52,211,153,0.3)">✅ Complete</span>
     <span class="badge aws">Amazon RDS</span>
     <span class="badge aws">Amazon EC2</span>
     <span class="badge aws">VPC</span>
@@ -174,8 +174,8 @@
         <div class="timeline-label done">Lab 02<br>EC2 + VPC</div>
       </div>
       <div class="timeline-item">
-        <div class="timeline-dot active"></div>
-        <div class="timeline-label active">Lab 03<br>RDS + EC2</div>
+        <div class="timeline-dot done"></div>
+        <div class="timeline-label done">Lab 03<br>RDS + EC2</div>
       </div>
       <div class="timeline-item">
         <div class="timeline-dot pending"></div>
@@ -527,6 +527,60 @@ EXIT;</pre>
       <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:12px">
         <a href="https://github.com/oumoeurtmm-code/ai-terminal-workflow/tree/master/projects/03-rds-ec2-two-tier" target="_blank" style="color:var(--accent);text-decoration:none;font-size:0.9rem">→ deploy.sh + cleanup.sh on GitHub</a>
         <a href="../project-tracker/" style="color:var(--accent3);text-decoration:none;font-size:0.9rem">→ View all labs in Project Tracker</a>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-title">Lab Screenshots</div>
+    <div class="grid-2">
+      <div class="card">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">01 — Deploy Complete</h3>
+        <img src="docs/screenshots/01-deploy-complete.png" alt="Deploy complete terminal output" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">02 — VPC + 3 Subnets</h3>
+        <img src="docs/screenshots/02-vpc-subnets.png" alt="VPC and subnets console" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">03 — EC2 Security Group Rules</h3>
+        <img src="docs/screenshots/03-ec2-sg-rules.png" alt="EC2 security group outbound rules" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">04 — RDS SG Inbound (SG Reference)</h3>
+        <img src="docs/screenshots/04-rds-sg-rules.png" alt="RDS security group inbound from EC2 SG" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">05 — Secrets Manager</h3>
+        <img src="docs/screenshots/05-secrets-manager.png" alt="Secrets Manager secret detail" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">06 — RDS Instance Available</h3>
+        <img src="docs/screenshots/06-rds-available.png" alt="RDS instance status available" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">07 — EC2 Instance Running</h3>
+        <img src="docs/screenshots/07-ec2-running.png" alt="EC2 instance running state" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">08 — IAM Role Policies</h3>
+        <img src="docs/screenshots/08-iam-role.png" alt="IAM role with SSM and Secrets Manager policies" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">09 — SSM Session Active</h3>
+        <img src="docs/screenshots/09-ssm-session.png" alt="SSM session terminal prompt" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">10 — MySQL Connected to RDS</h3>
+        <img src="docs/screenshots/10-mysql-connected.png" alt="MySQL connected to RDS endpoint" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">11 — SQL Output</h3>
+        <img src="docs/screenshots/11-sql-output.png" alt="SQL commands and table output" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">12 — Cleanup Verified</h3>
+        <img src="docs/screenshots/12-cleanup-verified.png" alt="Cleanup complete all resources deleted" style="width:100%;border-radius:8px;border:1px solid var(--border)">
       </div>
     </div>
   </section>
