@@ -111,15 +111,19 @@
     <span class="badge">Okta</span>
     <span class="badge">Microsoft Entra</span>
     <span class="badge">AWS · Azure · GCP</span>
+    <span class="badge" style="border-color:#6366f1;color:#818cf8">🔵 Active</span>
   </div>
 </header>
 
 <nav>
   <a href="../../index.html" style="color:var(--accent2);text-decoration:none;padding:8px 18px;border-radius:8px;font-size:0.9rem;border:1px solid var(--border)">← Portfolio</a>
   <a href="#overview">Overview</a>
+  <a href="#quickstart">Quick Start</a>
+  <a href="#techstack">Tech Stack</a>
   <a href="#models">AI Models</a>
   <a href="#provisioning">New Hire Flow</a>
   <a href="#access">Access Requests</a>
+  <a href="#cost-report">Cost Report</a>
   <a href="#ops">Ops Monitoring</a>
   <a href="#metrics">Metrics</a>
   <a href="#sample-hires">Sample Hires</a>
@@ -132,7 +136,7 @@
     <h2>System Overview</h2>
     <div class="grid-3" style="margin-bottom:24px">
       <div class="card stat"><div class="number">4</div><div class="label">AI Models Orchestrated</div></div>
-      <div class="card stat"><div class="number">3</div><div class="label">Core Workflow Automations</div></div>
+      <div class="card stat"><div class="number">4</div><div class="label">Core Workflow Automations</div></div>
       <div class="card stat"><div class="number">~50%</div><div class="label">Reduction in Manual IT Toil</div></div>
     </div>
 
@@ -162,6 +166,104 @@ graph LR
     style J fill:#3d2000,stroke:#fbbf24,color:#e2e8f0
     style K fill:#1e1e1e,stroke:#94a3b8,color:#e2e8f0
       </div>
+    </div>
+  </section>
+
+  <!-- QUICK START -->
+  <section id="quickstart">
+    <h2>Quick Start — Self-Host with Docker</h2>
+    <p style="color:var(--muted);margin-bottom:20px">Run everything locally for free. No n8n Cloud subscription needed. Requires Docker Desktop and two API keys (both have free tiers).</p>
+    <div class="grid-2" style="margin-bottom:20px">
+      <div class="card green-border">
+        <h3>1. Clone &amp; Configure</h3>
+        <pre style="font-size:0.82rem;color:var(--muted);margin-top:12px;overflow-x:auto">cd projects/n8n-opencode-it-automation
+cp .env.example .env
+# Edit .env — set at minimum:
+#   N8N_BASIC_AUTH_USER=admin
+#   N8N_BASIC_AUTH_PASSWORD=your-secure-password
+#   N8N_ENCRYPTION_KEY=$(openssl rand -hex 32)
+#   ANTHROPIC_API_KEY=sk-ant-...
+#   GOOGLE_AI_API_KEY=AIza...</pre>
+      </div>
+      <div class="card accent-border">
+        <h3>2. Start n8n</h3>
+        <pre style="font-size:0.82rem;color:var(--muted);margin-top:12px;overflow-x:auto">docker compose up -d
+# Wait ~15 seconds, then open:
+# http://localhost:5678
+
+# Useful commands:
+docker compose logs -f n8n   # view logs
+docker compose down           # stop
+docker compose down -v        # stop + wipe data</pre>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card yellow-border">
+        <h3>3. Import Workflows in n8n</h3>
+        <p style="color:var(--muted);font-size:0.88rem;margin-top:8px">Workflows → Import from file (or drag-and-drop the JSON)</p>
+        <table style="margin-top:12px;font-size:0.82rem">
+          <tr><td><code>workflows/cloud-cost-report.json</code></td><td>Weekly AWS cost summary → Slack</td></tr>
+          <tr><td><code>workflows/new-hire-provisioning.json</code></td><td>Okta + Entra provisioning</td></tr>
+          <tr><td><code>workflows/access-request.json</code></td><td>AI access policy engine</td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <h3>4. Set n8n Variables</h3>
+        <p style="color:var(--muted);font-size:0.88rem;margin-top:8px">Settings → Variables → Add Variable</p>
+        <table style="margin-top:12px;font-size:0.82rem">
+          <tr><td><code>ANTHROPIC_API_KEY</code></td><td>cloud-cost-report narrative</td></tr>
+          <tr><td><code>GOOGLE_AI_API_KEY</code></td><td>Gemini recommendations</td></tr>
+          <tr><td><code>SLACK_CHANNEL_FINOPS</code></td><td><code>#cloud-costs</code></td></tr>
+          <tr><td><code>SLACK_CHANNEL_OPS</code></td><td><code>#it-ops</code></td></tr>
+          <tr><td><code>OPENCODE_URL</code></td><td>optional — OpenCode layer</td></tr>
+        </table>
+      </div>
+    </div>
+    <div style="margin-top:16px">
+      <div class="card" style="background:var(--surface)">
+        <p style="color:var(--muted);font-size:0.88rem"><strong style="color:var(--green)">Tip:</strong> The <code>cloud-cost-report</code> workflow is the easiest to test locally — it uses built-in sample cost data when AWS credentials are not configured. Click <strong>Test workflow</strong> in the n8n UI for an immediate result without any cloud account.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- TECH STACK -->
+  <section id="techstack">
+    <h2>Tech Stack</h2>
+    <div class="model-grid">
+      <div class="model-card">
+        <div class="icon">⚙️</div>
+        <div class="name">n8n (self-hosted)</div>
+        <div class="role">Workflow orchestrator · Docker · Free &amp; open-source · localhost:5678</div>
+      </div>
+      <div class="model-card">
+        <div class="icon">🤖</div>
+        <div class="name">Claude (Anthropic API)</div>
+        <div class="role">Cost narrative generation · Script generation · claude-3-5-haiku · Pay-per-token</div>
+      </div>
+      <div class="model-card">
+        <div class="icon">🌀</div>
+        <div class="name">Gemini (free tier)</div>
+        <div class="role">FinOps recommendations · Policy reasoning · Gemini 2.0 Flash · Free API</div>
+      </div>
+      <div class="model-card">
+        <div class="icon">🔍</div>
+        <div class="name">Perplexity (optional)</div>
+        <div class="role">Research &amp; compliance lookups · Only needed with OpenCode orchestration layer</div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:20px">
+      <h3>Deployment Model</h3>
+      <table style="margin-top:12px">
+        <thead><tr><th>Component</th><th>Where it runs</th><th>Cost</th><th>Required</th></tr></thead>
+        <tbody>
+          <tr><td>n8n</td><td>Docker container (localhost)</td><td>Free — self-hosted</td><td>Yes</td></tr>
+          <tr><td>Claude claude-3-5-haiku</td><td>Anthropic API (cloud)</td><td>~$0.001 / 1K tokens</td><td>For cost-report workflow</td></tr>
+          <tr><td>Gemini 2.0 Flash</td><td>Google AI API (cloud)</td><td>Free tier available</td><td>For cost-report &amp; access-request</td></tr>
+          <tr><td>Grok</td><td>xAI API via OpenCode</td><td>Varies</td><td>For ops monitoring (OpenCode layer)</td></tr>
+          <tr><td>Perplexity</td><td>Perplexity API via OpenCode</td><td>Varies</td><td>Optional</td></tr>
+          <tr><td>OpenCode</td><td>Self-hosted or cloud</td><td>Free — open-source</td><td>Optional — adds multi-model routing</td></tr>
+        </tbody>
+      </table>
     </div>
   </section>
 
@@ -317,9 +419,78 @@ flowchart TD
     </div>
   </section>
 
+  <!-- CLOUD COST REPORT -->
+  <section id="cost-report">
+    <h2>Workflow 3 — Cloud Cost Report (Claude + Gemini)</h2>
+    <div class="grid-2">
+      <div>
+        <div class="mermaid">
+flowchart TD
+    A([Weekly Schedule\nMonday 08:00 UTC]) --> B[Set Report Window\n7-day billing period]
+    B --> C[AWS Cost Explorer\nGetCostAndUsage]
+    C --> D[Parse and Compact\nCost Data]
+    D --> E[Claude AI\nGenerate Cost Narrative]
+    E --> F[Extract Narrative Text]
+    F --> G[Slack — Post\nWeekly Cost Report]
+    F --> H[Gemini — Optimization\nRecommendations]
+    H --> I[Extract Gemini\nRecommendations]
+    I --> J[Slack — Post\nGemini Recommendations]
+    style A fill:#1e3a5f,stroke:#60a5fa,color:#e2e8f0
+    style E fill:#0c3a4a,stroke:#22d3ee,color:#e2e8f0
+    style H fill:#052e16,stroke:#34d399,color:#e2e8f0
+    style G fill:#3d2000,stroke:#fbbf24,color:#e2e8f0
+    style J fill:#3d2000,stroke:#fbbf24,color:#e2e8f0
+        </div>
+      </div>
+      <div>
+        <div class="card green-border" style="margin-bottom:16px">
+          <h3>Step-by-Step</h3>
+          <div style="margin-top:12px">
+            <div class="flow-step"><div class="step-num">1</div><div class="step-content"><div class="step-title">Weekly Schedule Trigger</div><div class="step-desc">Fires every Monday at 08:00 UTC. Adjust day/hour for your timezone.</div></div></div>
+            <div class="step-connector"></div>
+            <div class="flow-step"><div class="step-num">2</div><div class="step-content"><div class="step-title">Fetch AWS Cost Data</div><div class="step-desc">Calls AWS Cost Explorer GetCostAndUsage for the previous 7-day window, grouped by service. Falls back to sample data when credentials are not configured.</div></div></div>
+            <div class="step-connector"></div>
+            <div class="flow-step"><div class="step-num">3</div><div class="step-content"><div class="step-title">Claude — Cost Narrative</div><div class="step-desc">claude-3-5-haiku generates a concise Slack-friendly summary: total spend, top cost drivers, week-over-week change, and actionable recommendations.</div></div></div>
+            <div class="step-connector"></div>
+            <div class="flow-step"><div class="step-num">4</div><div class="step-content"><div class="step-title">Gemini — Optimization (parallel)</div><div class="step-desc">Gemini 2.0 Flash (free tier) produces 3 specific FinOps recommendations with estimated monthly savings, running in parallel with the Slack post.</div></div></div>
+            <div class="step-connector"></div>
+            <div class="flow-step"><div class="step-num">5</div><div class="step-content"><div class="step-title">Post to Slack</div><div class="step-desc">Two messages to <code>#cloud-costs</code>: Claude narrative first, then Gemini recommendations as a follow-up thread.</div></div></div>
+          </div>
+        </div>
+        <div class="card accent-border">
+          <h3>Sample Slack Output</h3>
+          <pre style="font-size:0.78rem;color:var(--muted);overflow-x:auto;margin-top:8px">*Weekly Cloud Cost Report* | 2026-03-08 to 2026-03-15
+
+Total spend: $847.32 (+7.9% vs last week)
+
+Top drivers:
+• EC2: $412.80 (49%)
+• RDS: $198.50 (23%)
+• S3:  $87.40 (10%)
+
+Recommendations:
+1. Rightsize 3 idle t3.medium instances → save ~$45/mo
+2. Enable S3 Intelligent-Tiering → save ~$12/mo
+3. Review RDS Multi-AZ for dev environments</pre>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:16px">
+      <div class="card" style="background:var(--surface)">
+        <h3>Required Variables</h3>
+        <table style="margin-top:8px;font-size:0.82rem">
+          <tr><td><code>ANTHROPIC_API_KEY</code></td><td>Anthropic API key — used for Claude narrative generation</td></tr>
+          <tr><td><code>GOOGLE_AI_API_KEY</code></td><td>Google AI Studio key — Gemini Flash (free tier)</td></tr>
+          <tr><td><code>SLACK_CHANNEL_FINOPS</code></td><td>Target channel, defaults to <code>#cloud-costs</code></td></tr>
+          <tr><td><code>AWS_SIGV4_AUTH</code></td><td>Optional — AWS SigV4 auth header. Omit for sample data mode.</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
   <!-- OPS MONITORING -->
   <section id="ops">
-    <h2>Workflow 3 — Cloud Ops Monitoring (Grok)</h2>
+    <h2>Workflow 4 — Cloud Ops Monitoring (Grok)</h2>
     <div class="mermaid">
 flowchart LR
     A([Schedule Trigger\nevery 15 min]) --> B[AWS CloudWatch\nAzure Monitor\nGCP Logging]
@@ -411,7 +582,7 @@ flowchart LR
 
 <footer>
   <p>Built by <a href="https://github.com/oumoeurtmm-code">oumoeurtmm-code</a> · n8n + OpenCode + Claude Code + Gemini + Grok + Perplexity</p>
-  <p style="margin-top:6px"><a href="workflows/new-hire-provisioning.json">↓ New Hire Workflow JSON</a> &nbsp;|&nbsp; <a href="workflows/access-request.json">↓ Access Request Workflow JSON</a> &nbsp;|&nbsp; <a href="README.md">Architecture Docs</a></p>
+  <p style="margin-top:6px"><a href="workflows/new-hire-provisioning.json">↓ New Hire Workflow JSON</a> &nbsp;|&nbsp; <a href="workflows/access-request.json">↓ Access Request Workflow JSON</a> &nbsp;|&nbsp; <a href="workflows/cloud-cost-report.json">↓ Cloud Cost Report Workflow JSON</a> &nbsp;|&nbsp; <a href="setup.md">Setup Guide</a> &nbsp;|&nbsp; <a href="README.md">Architecture Docs</a></p>
 </footer>
 
 <script>
