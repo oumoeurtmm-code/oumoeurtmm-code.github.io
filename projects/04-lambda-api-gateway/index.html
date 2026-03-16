@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lab 04 — Lambda + API Gateway | AWS Labs</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #0a0e17; --surface: #111827; --card: #1a2235;
+      --border: #1e2d45; --accent: #f59e0b; --accent2: #22d3ee;
+      --accent3: #a78bfa; --green: #34d399; --yellow: #fbbf24;
+      --red: #f87171; --text: #e2e8f0; --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.6; }
+
+    header {
+      background: linear-gradient(135deg, #1a1000 0%, #0a0e17 50%, #1a0a2e 100%);
+      padding: 60px 40px; text-align: center;
+      border-bottom: 1px solid var(--border); position: relative; overflow: hidden;
+    }
+    header::before {
+      content: ''; position: absolute; top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background: radial-gradient(ellipse at center, rgba(245,158,11,0.05) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .lab-label { font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 16px; }
+    header h1 { font-size: 2.4rem; font-weight: 700; background: linear-gradient(90deg, #f59e0b, #fbbf24, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    header p { color: var(--muted); margin-top: 12px; font-size: 1.05rem; max-width: 720px; margin-left: auto; margin-right: auto; }
+    .badge { display: inline-block; background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 4px 14px; font-size: 0.8rem; color: var(--accent2); margin: 6px 4px; }
+    .badge.aws { color: var(--accent); border-color: rgba(245,158,11,0.3); }
+    .badge.planned { color: var(--muted); border-color: rgba(100,116,139,0.3); }
+
+    nav { display: flex; justify-content: center; gap: 8px; padding: 20px; background: var(--surface); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    nav a { color: var(--muted); text-decoration: none; padding: 8px 18px; border-radius: 8px; font-size: 0.9rem; border: 1px solid var(--border); transition: all 0.2s; }
+    nav a:hover { color: var(--text); border-color: var(--accent); background: var(--card); }
+    nav a.home { color: var(--accent); border-color: rgba(245,158,11,0.3); }
+
+    main { max-width: 1200px; margin: 0 auto; padding: 40px 24px; }
+    section { margin-bottom: 64px; }
+    h2 { font-size: 1.5rem; color: var(--accent); margin-bottom: 24px; padding-bottom: 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+    h2 .h2-icon { font-size: 1.2rem; }
+    h3 { font-size: 1.05rem; color: var(--accent2); margin-bottom: 12px; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    @media (max-width: 900px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 600px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+    .card.aws-border    { border-left: 3px solid var(--accent); }
+    .card.green-border  { border-left: 3px solid var(--green); }
+    .card.cyan-border   { border-left: 3px solid var(--accent2); }
+    .card.purple-border { border-left: 3px solid var(--accent3); }
+    .card.red-border    { border-left: 3px solid var(--red); }
+
+    .stat { text-align: center; }
+    .stat .number { font-size: 2.4rem; font-weight: 700; color: var(--accent); }
+    .stat .label { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+
+    .service-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center; transition: border-color 0.2s, transform 0.2s; }
+    .service-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .service-icon { font-size: 2.2rem; font-weight: 900; color: var(--accent); margin-bottom: 10px; font-family: monospace; }
+    .service-name { font-weight: 700; font-size: 1rem; margin-bottom: 6px; }
+    .service-desc { color: var(--muted); font-size: 0.82rem; line-height: 1.55; }
+
+    .mermaid-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; overflow-x: auto; }
+
+    .steps { display: flex; flex-direction: column; gap: 0; }
+    .step { display: flex; gap: 16px; position: relative; padding-bottom: 24px; }
+    .step:last-child { padding-bottom: 0; }
+    .step:last-child .step-line { display: none; }
+    .step-left { display: flex; flex-direction: column; align-items: center; width: 36px; flex-shrink: 0; }
+    .step-num { width: 36px; height: 36px; border-radius: 50%; background: var(--accent); color: #000; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; flex-shrink: 0; }
+    .step-line { width: 2px; flex: 1; background: var(--border); margin-top: 6px; }
+    .step-content { flex: 1; padding-top: 6px; }
+    .step-title { font-weight: 600; font-size: 1rem; margin-bottom: 4px; }
+    .step-desc { color: var(--muted); font-size: 0.88rem; }
+    .step-cmd { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; font-family: monospace; font-size: 0.8rem; color: var(--accent); margin-top: 8px; overflow-x: auto; }
+    .step-tags { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .tag { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+    .tag.aws    { background: rgba(245,158,11,0.12);  color: #f59e0b;   border: 1px solid rgba(245,158,11,0.25); }
+    .tag.cyan   { background: rgba(34,211,238,0.1);   color: #22d3ee;   border: 1px solid rgba(34,211,238,0.2); }
+    .tag.green  { background: rgba(52,211,153,0.1);   color: #34d399;   border: 1px solid rgba(52,211,153,0.2); }
+    .tag.purple { background: rgba(167,139,250,0.1);  color: #a78bfa;   border: 1px solid rgba(167,139,250,0.2); }
+    .tag.red    { background: rgba(248,113,113,0.1);  color: #f87171;   border: 1px solid rgba(248,113,113,0.2); }
+
+    .concept-list { list-style: none; }
+    .concept-list li { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; color: var(--muted); align-items: flex-start; }
+    .concept-list li:last-child { border-bottom: none; }
+    .concept-list .check { color: var(--accent); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+    .concept-list strong { color: var(--text); }
+
+    pre { background: #0d1117; border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: monospace; font-size: 0.82rem; color: var(--accent); overflow-x: auto; margin-top: 10px; line-height: 1.6; }
+    code { background: rgba(245,158,11,0.08); color: var(--accent); padding: 1px 6px; border-radius: 4px; font-family: monospace; font-size: 0.85em; }
+
+    .cost-box { background: linear-gradient(135deg, rgba(245,158,11,0.08), transparent); border: 1px solid rgba(245,158,11,0.3); border-radius: 12px; padding: 28px; text-align: center; }
+    .cost-price { font-size: 3.5rem; font-weight: 900; color: var(--accent); }
+    .cost-sub { color: var(--muted); font-size: 0.88rem; margin-top: 6px; }
+
+    .chart-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+    canvas { max-height: 260px; }
+
+    .timeline { display: flex; justify-content: space-between; align-items: flex-start; position: relative; padding: 20px 0; }
+    .timeline::before { content: ''; position: absolute; top: 38px; left: 0; right: 0; height: 2px; background: var(--border); }
+    .timeline-item { display: flex; flex-direction: column; align-items: center; flex: 1; position: relative; }
+    .timeline-dot { width: 16px; height: 16px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); z-index: 1; margin-bottom: 12px; }
+    .timeline-dot.done { background: var(--green); }
+    .timeline-dot.active { background: var(--accent); box-shadow: 0 0 12px rgba(245,158,11,0.5); }
+    .timeline-dot.pending { background: var(--border); }
+    .timeline-label { font-size: 0.75rem; color: var(--muted); text-align: center; max-width: 80px; line-height: 1.4; }
+    .timeline-label.done { color: var(--green); }
+    .timeline-label.active { color: var(--accent); }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th { background: var(--surface); color: var(--accent2); padding: 11px 14px; text-align: left; border-bottom: 2px solid var(--border); }
+    td { padding: 11px 14px; border-bottom: 1px solid var(--border); color: var(--muted); }
+    td:first-child { color: var(--text); font-weight: 500; }
+    tr:hover td { background: var(--surface); }
+
+    footer { text-align: center; padding: 40px; color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--border); margin-top: 40px; }
+    footer a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="lab-label">AWS Lab Series · Lab 04 of 05</div>
+  <h1>Lambda + API Gateway</h1>
+  <p>Deploy a serverless REST API using AWS Lambda (Python 3.12) and API Gateway. No servers to manage — Lambda scales automatically and you pay only for what you use.</p>
+  <div style="margin-top:20px">
+    <span class="badge" style="color:#60a5fa;border-color:rgba(96,165,250,0.3)">🔵 In Progress</span>
+    <span class="badge aws">AWS Lambda</span>
+    <span class="badge aws">API Gateway</span>
+    <span class="badge aws">IAM</span>
+    <span class="badge aws">CloudWatch</span>
+  </div>
+</header>
+
+<nav>
+  <a href="../../index.html" class="home">← Portfolio</a>
+  <a href="#overview">Overview</a>
+  <a href="#architecture">Architecture</a>
+  <a href="#process">Deploy Process</a>
+  <a href="#services">Services</a>
+  <a href="#concepts">Key Concepts</a>
+  <a href="#cost">Cost</a>
+  <a href="#commands">Commands</a>
+</nav>
+
+<main>
+
+  <!-- LAB SERIES TIMELINE -->
+  <section style="margin-bottom:40px">
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-dot done"></div>
+        <div class="timeline-label done">Lab 01<br>S3 + CloudFront</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot done"></div>
+        <div class="timeline-label done">Lab 02<br>EC2 + VPC</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot done"></div>
+        <div class="timeline-label done">Lab 03<br>RDS + EC2</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot active"></div>
+        <div class="timeline-label active">Lab 04<br>Lambda + API GW</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot pending"></div>
+        <div class="timeline-label">Lab 05<br>Multi-tier ALB</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section id="overview">
+    <h2><span class="h2-icon">📊</span> Lab Overview</h2>
+    <div class="grid-4" style="margin-bottom:24px">
+      <div class="card stat"><div class="number">2</div><div class="label">AWS Services (Lambda + API GW)</div></div>
+      <div class="card stat"><div class="number" style="color:var(--green)">0</div><div class="label">Servers to Manage</div></div>
+      <div class="card stat"><div class="number">1M</div><div class="label">Free Requests/Month</div></div>
+      <div class="card stat"><div class="number">~10m</div><div class="label">Deploy Time</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card aws-border">
+        <h3>What You're Building</h3>
+        <p style="color:var(--muted);font-size:0.9rem;margin-bottom:14px">A serverless REST API — the classic entry point to cloud-native development. No EC2, no VPC, no security groups to manage. API Gateway handles HTTP, Lambda runs your code on demand.</p>
+        <ul class="concept-list">
+          <li><span class="check">▸</span><span><strong>Lambda function</strong> — Python 3.12 handler that responds to GET and POST at /items</span></li>
+          <li><span class="check">▸</span><span><strong>API Gateway REST API</strong> — /items resource with GET and POST methods, LAMBDA_PROXY integration</span></li>
+          <li><span class="check">▸</span><span><strong>IAM execution role</strong> — Lambda assumes this role; grants permission to write CloudWatch Logs</span></li>
+          <li><span class="check">▸</span><span><strong>CloudWatch Logs</strong> — auto-created on first invocation, captures all print() output</span></li>
+          <li><span class="check">▸</span><span><strong>API stage deployment</strong> — "lab" stage forms the public invoke URL</span></li>
+        </ul>
+      </div>
+      <div class="card cyan-border">
+        <h3>Key Design Decisions</h3>
+        <table style="margin-top:8px">
+          <thead><tr><th>Decision</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td>REST API (not HTTP API)</td><td>More exam topics: stages, resources, methods, deployments</td></tr>
+            <tr><td>LAMBDA_PROXY integration</td><td>Full request forwarded to Lambda — no mapping templates</td></tr>
+            <tr><td>Python 3.12</td><td>Current LTS, fast cold starts, familiar syntax</td></tr>
+            <tr><td>128MB memory</td><td>Minimum viable — Lambda priced on memory × duration</td></tr>
+            <tr><td>No auth</td><td>Lab simplicity — prod would use Cognito or API keys</td></tr>
+            <tr><td>Single Lambda for all methods</td><td>Route logic inside handler — one function to manage</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ARCHITECTURE -->
+  <section id="architecture">
+    <h2><span class="h2-icon">🏗</span> Architecture</h2>
+    <div class="mermaid-wrap" style="margin-bottom:20px">
+      <div class="mermaid">
+graph TB
+    Internet(["🌐 Internet"])
+    subgraph AWS ["☁️ AWS Cloud — us-east-1"]
+      subgraph APIGW ["🔀 API Gateway REST API"]
+        Resource["/items"]
+        GET["GET method\nLAMBDA_PROXY"]
+        POST["POST method\nLAMBDA_PROXY"]
+      end
+      Lambda["⚡ Lambda\naws-cert-study-lab04-fn\nPython 3.12 · 128MB"]
+      CW["📋 CloudWatch Logs\n/aws/lambda/..."]
+      IAM["🔐 IAM Execution Role\nAWSLambdaBasicExecutionRole"]
+    end
+    Internet -->|HTTPS| APIGW
+    GET -->|invoke| Lambda
+    POST -->|invoke| Lambda
+    Lambda -->|logs| CW
+    IAM -->|attached to| Lambda
+    style Lambda fill:#7a3500,stroke:#f59e0b,color:#e2e8f0
+    style APIGW fill:#052e16,stroke:#34d399,color:#e2e8f0
+    style CW fill:#0c3a4a,stroke:#22d3ee,color:#e2e8f0
+    style IAM fill:#2d1b69,stroke:#a78bfa,color:#e2e8f0
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card aws-border">
+        <h3>Serverless vs Server-Based (Lab 03)</h3>
+        <table style="margin-top:8px">
+          <thead><tr><th></th><th>Lab 04 (Lambda)</th><th>Lab 03 (EC2)</th></tr></thead>
+          <tbody>
+            <tr><td>Server management</td><td>None</td><td>You patch and maintain</td></tr>
+            <tr><td>Scaling</td><td>Automatic (concurrent)</td><td>Manual or Auto Scaling</td></tr>
+            <tr><td>Idle cost</td><td>$0 — pay per invocation</td><td>$0.0104/hr always-on</td></tr>
+            <tr><td>Cold start</td><td>~100-500ms first call</td><td>N/A — always warm</td></tr>
+            <tr><td>Max execution time</td><td>15 minutes</td><td>Unlimited</td></tr>
+            <tr><td>Deployment</td><td>Zip upload (~2 min)</td><td>AMI + user data (~8 min)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card purple-border">
+        <h3>LAMBDA_PROXY Event Structure</h3>
+        <p style="color:var(--muted);font-size:0.88rem;margin-bottom:12px">API Gateway passes the full HTTP request as a JSON event to Lambda:</p>
+        <pre style="font-size:0.78rem">{
+  "httpMethod": "GET",
+  "path": "/items",
+  "headers": { "Accept": "*/*", ... },
+  "queryStringParameters": null,
+  "body": null,
+  "requestContext": { "stage": "lab", ... }
+}</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- DEPLOY PROCESS -->
+  <section id="process">
+    <h2><span class="h2-icon">🚀</span> Deployment Process</h2>
+    <div class="grid-2">
+      <div>
+        <div class="mermaid-wrap">
+          <div class="mermaid">
+flowchart TD
+    A([▶ Run deploy.sh]) --> B[Create IAM Role\nLambda trust policy\nBasicExecutionRole policy]
+    B --> C[Wait 10s\nIAM propagation]
+    C --> D[Zip handler.py\nDeploy Lambda function\nPython 3.12 · 128MB]
+    D --> E[Create REST API\nAPI Gateway\nRegional endpoint]
+    E --> F[Create /items resource\nGET + POST methods\nLAMBDA_PROXY integration]
+    F --> G[Add Lambda permissions\napigw-get-items\napigw-post-items]
+    G --> H[Deploy to stage: lab\nGenerate invoke URL]
+    H --> I([✅ Ready\nInvoke URL printed])
+    style A fill:#3d2000,stroke:#f59e0b,color:#e2e8f0
+    style D fill:#3d2000,stroke:#f59e0b,color:#e2e8f0
+    style I fill:#052e16,stroke:#34d399,color:#e2e8f0
+    style B fill:#2d1b69,stroke:#a78bfa,color:#e2e8f0
+          </div>
+        </div>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-left"><div class="step-num">1</div><div class="step-line"></div></div>
+          <div class="step-content">
+            <div class="step-title">IAM Execution Role</div>
+            <div class="step-desc">Create role with Lambda trust policy. Attach AWSLambdaBasicExecutionRole to allow CloudWatch Logs writes. Wait 10s for IAM propagation.</div>
+            <div class="step-tags"><span class="tag purple">IAM Role</span><span class="tag cyan">CloudWatch</span></div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-left"><div class="step-num">2</div><div class="step-line"></div></div>
+          <div class="step-content">
+            <div class="step-title">Package + Deploy Lambda</div>
+            <div class="step-desc">Write handler.py to /tmp, zip it, deploy with Python 3.12 runtime. Set STAGE env variable. Lambda is live in seconds.</div>
+            <div class="step-tags"><span class="tag aws">Lambda</span><span class="tag green">Python 3.12</span><span class="tag aws">128MB</span></div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-left"><div class="step-num">3</div><div class="step-line"></div></div>
+          <div class="step-content">
+            <div class="step-title">Create REST API + /items Resource</div>
+            <div class="step-desc">Create the API, get root resource ID, add /items child resource, wire GET and POST methods with LAMBDA_PROXY integration.</div>
+            <div class="step-tags"><span class="tag green">REST API</span><span class="tag cyan">LAMBDA_PROXY</span></div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-left"><div class="step-num">4</div><div class="step-line"></div></div>
+          <div class="step-content">
+            <div class="step-title">Lambda Permissions</div>
+            <div class="step-desc">Add resource-based policy statements so API Gateway can invoke the function. One statement per method (GET, POST).</div>
+            <div class="step-tags"><span class="tag purple">Resource Policy</span><span class="tag aws">source-arn scoped</span></div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-left"><div class="step-num">5</div><div class="step-line"></div></div>
+          <div class="step-content">
+            <div class="step-title">Deploy to Stage</div>
+            <div class="step-desc">Create a deployment snapshot of the API configuration and publish it to the "lab" stage. Generates the public HTTPS invoke URL.</div>
+            <div class="step-cmd">curl -s https://&#123;api-id&#125;.execute-api.us-east-1.amazonaws.com/lab/items</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICES -->
+  <section id="services">
+    <h2><span class="h2-icon">⚙️</span> AWS Services Deep Dive</h2>
+    <div class="grid-3" style="margin-bottom:20px">
+      <div class="service-card">
+        <div class="service-icon">λ</div>
+        <div class="service-name">AWS Lambda</div>
+        <div class="service-desc">Run code without provisioning servers. Lambda executes your function in response to events (API Gateway, S3, DynamoDB streams, SNS, etc.). Scales from 0 to thousands of concurrent executions automatically.</div>
+        <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:4px;justify-content:center">
+          <span class="tag aws">Python 3.12</span><span class="tag green">128MB</span><span class="tag cyan">10s timeout</span>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">API</div>
+        <div class="service-name">API Gateway</div>
+        <div class="service-desc">Fully managed HTTP/REST/WebSocket API service. Handles TLS, throttling, caching, and authorization. REST APIs give you fine-grained control: define each resource, method, and integration type separately.</div>
+        <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:4px;justify-content:center">
+          <span class="tag green">REST API</span><span class="tag aws">Regional</span><span class="tag purple">PROXY</span>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">IAM</div>
+        <div class="service-name">IAM Execution Role</div>
+        <div class="service-desc">Lambda assumes this role on every invocation. AWSLambdaBasicExecutionRole grants permission to create log groups, streams, and put log events in CloudWatch. Without it, Lambda can't write logs.</div>
+        <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:4px;justify-content:center">
+          <span class="tag purple">Trust Policy</span><span class="tag cyan">Managed Policy</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card aws-border">
+      <h3>REST API vs HTTP API in API Gateway</h3>
+      <table style="margin-top:12px">
+        <thead><tr><th>Feature</th><th>REST API (this lab)</th><th>HTTP API</th></tr></thead>
+        <tbody>
+          <tr><td>Cost</td><td>$3.50/million calls</td><td>$1.00/million calls (cheaper)</td></tr>
+          <tr><td>Stages</td><td>Full stage management</td><td>Simplified stages</td></tr>
+          <tr><td>Authorizers</td><td>Lambda, Cognito, IAM</td><td>JWT, Lambda</td></tr>
+          <tr><td>Usage plans / API keys</td><td>Yes</td><td>No</td></tr>
+          <tr><td>Request/response mapping</td><td>Yes (VTL templates)</td><td>No</td></tr>
+          <tr><td>WebSocket</td><td>No</td><td>No (separate service)</td></tr>
+          <tr><td>Best for</td><td>Complex APIs, exam coverage</td><td>Simple Lambda APIs, lower cost</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- KEY CONCEPTS -->
+  <section id="concepts">
+    <h2><span class="h2-icon">🧠</span> Key Concepts Practiced</h2>
+    <div class="grid-2">
+      <div class="card aws-border">
+        <h3>Serverless &amp; Lambda</h3>
+        <ul class="concept-list">
+          <li><span class="check">✓</span><span><strong>Serverless</strong> — No OS, no patching, no capacity planning. AWS manages the execution environment entirely.</span></li>
+          <li><span class="check">✓</span><span><strong>Event-driven</strong> — Lambda only runs when triggered. No invocation = no cost. Perfect for APIs with variable traffic.</span></li>
+          <li><span class="check">✓</span><span><strong>Cold starts</strong> — First invocation (or after idle) spins up a new container: ~100-500ms extra latency. Subsequent calls reuse warm containers.</span></li>
+          <li><span class="check">✓</span><span><strong>Execution environment reuse</strong> — In-memory state (like the ITEMS list) persists between warm invocations on the same container. Never rely on this for stateful data.</span></li>
+        </ul>
+      </div>
+      <div class="card cyan-border">
+        <h3>API Gateway Patterns</h3>
+        <ul class="concept-list">
+          <li><span class="check">✓</span><span><strong>LAMBDA_PROXY integration</strong> — API Gateway passes the raw HTTP request as a JSON event. Lambda controls the full response (statusCode, headers, body).</span></li>
+          <li><span class="check">✓</span><span><strong>LAMBDA integration (non-proxy)</strong> — API Gateway maps the request using VTL templates before sending to Lambda. More control, more complexity.</span></li>
+          <li><span class="check">✓</span><span><strong>Stages and deployments</strong> — A deployment is a snapshot of your API config. A stage (like "lab") points to a deployment. Changing a method requires a new deployment.</span></li>
+          <li><span class="check">✓</span><span><strong>Resource-based policy</strong> — Lambda permissions use <code>add-permission</code> to allow API Gateway to invoke the function. Scoped by <code>source-arn</code> to the specific API, stage, and method.</span></li>
+        </ul>
+      </div>
+      <div class="card purple-border">
+        <h3>IAM for Lambda</h3>
+        <ul class="concept-list">
+          <li><span class="check">✓</span><span><strong>Execution role</strong> — The identity Lambda assumes when running. Controls what AWS resources Lambda can call (DynamoDB, S3, etc.).</span></li>
+          <li><span class="check">✓</span><span><strong>Resource-based policy</strong> — The Lambda function's own policy. Controls who can invoke Lambda (API Gateway, S3 events, other accounts).</span></li>
+          <li><span class="check">✓</span><span><strong>Two permission models</strong> — Execution role = what Lambda can do. Resource policy = who can invoke Lambda. Both must be correct.</span></li>
+          <li><span class="check">✓</span><span><strong>IAM propagation delay</strong> — After creating a role, wait ~10 seconds before using it in Lambda. CloudFormation and scripts must account for this.</span></li>
+        </ul>
+      </div>
+      <div class="card green-border">
+        <h3>Exam Notes</h3>
+        <ul class="concept-list">
+          <li><span class="check">✓</span><span><strong>Lambda max timeout</strong> — 15 minutes (900 seconds). For longer workloads, use Step Functions or ECS Fargate.</span></li>
+          <li><span class="check">✓</span><span><strong>Lambda layers</strong> — Share code/libraries across functions. Up to 5 layers per function. Good for dependencies like pandas, numpy.</span></li>
+          <li><span class="check">✓</span><span><strong>Concurrency</strong> — Default limit: 1,000 concurrent executions per region. Reserved concurrency locks a quota for critical functions.</span></li>
+          <li><span class="check">✓</span><span><strong>Integration HTTP method</strong> — For Lambda integrations, <code>--integration-http-method</code> is always POST, regardless of the API method (GET, POST, DELETE, etc.).</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- COST -->
+  <section id="cost">
+    <h2><span class="h2-icon">💰</span> Cost Breakdown</h2>
+    <div class="grid-2">
+      <div class="cost-box">
+        <div class="cost-price">~$0</div>
+        <div class="cost-sub">Genuinely free — not just first 12 months</div>
+        <p style="color:var(--muted);font-size:0.85rem;margin-top:16px">Lambda free tier (1M requests/month + 400K GB-seconds) is <strong style="color:var(--accent)">permanent</strong> — unlike EC2/RDS free tier which expires after 12 months. At lab volumes (dozens of invocations), cost is exactly $0.00.</p>
+      </div>
+      <div class="chart-wrap">
+        <h3 style="margin-bottom:16px">EC2 Always-On vs Lambda Pay-Per-Use</h3>
+        <canvas id="costChart"></canvas>
+      </div>
+    </div>
+    <div class="card green-border" style="margin-top:20px">
+      <h3>Cost Reference</h3>
+      <table style="margin-top:12px">
+        <thead><tr><th>Resource</th><th>Cost</th><th>Free Tier</th></tr></thead>
+        <tbody>
+          <tr><td>Lambda requests</td><td>$0.20 per 1M requests</td><td>✅ 1M/month forever</td></tr>
+          <tr><td>Lambda compute (128MB × 1s)</td><td>$0.0000020834 per invocation</td><td>✅ 400K GB-sec/month forever</td></tr>
+          <tr><td>API Gateway REST API</td><td>$3.50 per million API calls</td><td>✅ 1M calls/month — first 12 months</td></tr>
+          <tr><td>CloudWatch Logs ingestion</td><td>$0.50/GB</td><td>✅ 5GB/month free</td></tr>
+          <tr><td>EC2 t3.micro (comparison)</td><td style="color:var(--red)">$7.49/month always-on</td><td>First 12 months only</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- COMMANDS -->
+  <section id="commands">
+    <h2><span class="h2-icon">💻</span> Commands Reference</h2>
+    <div class="grid-2">
+      <div class="card aws-border">
+        <h3>Deploy (~10 minutes)</h3>
+        <pre>cd ~/workspace/ai-terminal-workflow
+bash projects/04-lambda-api-gateway/scripts/deploy.sh</pre>
+      </div>
+      <div class="card red-border">
+        <h3>Cleanup (always run after lab)</h3>
+        <pre>bash projects/04-lambda-api-gateway/scripts/cleanup.sh
+
+# Verify nothing remains
+aws resourcegroupstaggingapi get-resources \
+  --tag-filters Key=Project,Values=aws-cert-study \
+  --query 'ResourceTagMappingList[].ResourceARN'</pre>
+      </div>
+      <div class="card green-border">
+        <h3>Test — GET /items</h3>
+        <pre># Replace with your actual API ID from deploy output
+API_ID="your-api-id"
+REGION="us-east-1"
+
+curl -s \
+  "https://${API_ID}.execute-api.${REGION}.amazonaws.com/lab/items" \
+  | python3 -m json.tool</pre>
+      </div>
+      <div class="card cyan-border">
+        <h3>Test — POST /items</h3>
+        <pre>curl -s -X POST \
+  -H 'Content-Type: application/json' \
+  -d '{"name": "EKS Cluster", "type": "compute"}' \
+  "https://${API_ID}.execute-api.${REGION}.amazonaws.com/lab/items" \
+  | python3 -m json.tool</pre>
+      </div>
+    </div>
+    <div class="card aws-border" style="margin-top:20px">
+      <h3>Source Code</h3>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:12px">
+        <a href="https://github.com/oumoeurtmm-code/ai-terminal-workflow/tree/master/projects/04-lambda-api-gateway" target="_blank" style="color:var(--accent);text-decoration:none;font-size:0.9rem">→ deploy.sh + cleanup.sh + handler.py on GitHub</a>
+        <a href="../project-tracker/" style="color:var(--accent3);text-decoration:none;font-size:0.9rem">→ View all labs in Project Tracker</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREENSHOTS -->
+  <section>
+    <h2><span class="h2-icon">📸</span> Lab Screenshots</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">01 — IAM Role Created</h3>
+        <img src="docs/screenshots/01-iam-role.png" alt="IAM execution role with AWSLambdaBasicExecutionRole" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">02 — Lambda Function Deployed</h3>
+        <img src="docs/screenshots/02-lambda-fn.png" alt="Lambda function in AWS console" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">03 — API Gateway REST API</h3>
+        <img src="docs/screenshots/03-api-gateway.png" alt="API Gateway REST API overview" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">04 — /items Resource + Methods</h3>
+        <img src="docs/screenshots/04-resources-methods.png" alt="/items resource with GET and POST methods" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">05 — Stage Deployment</h3>
+        <img src="docs/screenshots/05-deployment.png" alt="API Gateway stage deployment" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">06 — curl GET Response</h3>
+        <img src="docs/screenshots/06-get-test.png" alt="curl GET /items response" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">07 — curl POST Response</h3>
+        <img src="docs/screenshots/07-post-test.png" alt="curl POST /items response" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">08 — Cleanup Verified</h3>
+        <img src="docs/screenshots/08-cleanup-verified.png" alt="Cleanup complete all resources deleted" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p>AWS Lab 04 — Lambda + API Gateway</p>
+  <p style="margin-top:6px">
+    <a href="../../index.html">← Back to Portfolio</a> &nbsp;|&nbsp;
+    <a href="../project-tracker/">Project Tracker</a> &nbsp;|&nbsp;
+    <a href="https://github.com/oumoeurtmm-code/ai-terminal-workflow/tree/master/projects/04-lambda-api-gateway" target="_blank">GitHub Repo</a>
+  </p>
+</footer>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true, theme: 'dark',
+    themeVariables: {
+      primaryColor: '#3d2000', primaryTextColor: '#e2e8f0',
+      primaryBorderColor: '#f59e0b', lineColor: '#94a3b8',
+      secondaryColor: '#1a2235', tertiaryColor: '#111827',
+      edgeLabelBackground: '#111827'
+    }
+  });
+
+  new Chart(document.getElementById('costChart'), {
+    type: 'bar',
+    data: {
+      labels: ['EC2 t3.micro\n(always-on, 1 month)', 'Lambda\n(1M req, lab volume)'],
+      datasets: [{
+        label: 'Monthly Cost ($)',
+        data: [7.49, 0.00],
+        backgroundColor: ['rgba(248,113,113,0.6)', 'rgba(245,158,11,0.6)'],
+        borderColor: ['#f87171', '#f59e0b'],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e2d45' } },
+        y: {
+          ticks: { color: '#94a3b8', callback: v => '$' + v.toFixed(2) },
+          grid: { color: '#1e2d45' },
+          title: { display: true, text: 'Cost per Month (USD)', color: '#94a3b8' }
+        }
+      },
+      plugins: { legend: { labels: { color: '#94a3b8' } } }
+    }
+  });
+</script>
+</body>
+</html>
