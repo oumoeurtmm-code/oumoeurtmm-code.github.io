@@ -134,7 +134,7 @@
   <h1>Lambda + API Gateway</h1>
   <p>Deploy a serverless REST API using AWS Lambda (Python 3.12) and API Gateway. No servers to manage — Lambda scales automatically and you pay only for what you use.</p>
   <div style="margin-top:20px">
-    <span class="badge" style="color:#60a5fa;border-color:rgba(96,165,250,0.3)">🔵 In Progress</span>
+    <span class="badge" style="color:var(--green);border-color:rgba(52,211,153,0.3)">✅ Complete</span>
     <span class="badge aws">AWS Lambda</span>
     <span class="badge aws">API Gateway</span>
     <span class="badge aws">IAM</span>
@@ -171,8 +171,8 @@
         <div class="timeline-label done">Lab 03<br>RDS + EC2</div>
       </div>
       <div class="timeline-item">
-        <div class="timeline-dot active"></div>
-        <div class="timeline-label active">Lab 04<br>Lambda + API GW</div>
+        <div class="timeline-dot done"></div>
+        <div class="timeline-label done">Lab 04<br>Lambda + API GW</div>
       </div>
       <div class="timeline-item">
         <div class="timeline-dot pending"></div>
@@ -516,36 +516,40 @@ curl -s \
     <h2><span class="h2-icon">📸</span> Lab Screenshots</h2>
     <div class="grid-2">
       <div class="card">
-        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">01 — IAM Role Created</h3>
-        <img src="docs/screenshots/01-iam-role.png" alt="IAM execution role with AWSLambdaBasicExecutionRole" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">01 — Deploy Complete</h3>
+        <img src="docs/screenshots/01-deploy-complete.png" alt="Deploy complete terminal output" style="width:100%;border-radius:8px;border:1px solid var(--border)">
       </div>
       <div class="card">
-        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">02 — Lambda Function Deployed</h3>
-        <img src="docs/screenshots/02-lambda-fn.png" alt="Lambda function in AWS console" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">02 — IAM Role</h3>
+        <img src="docs/screenshots/02-iam-role.png" alt="IAM execution role with AWSLambdaBasicExecutionRole" style="width:100%;border-radius:8px;border:1px solid var(--border)">
       </div>
       <div class="card">
-        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">03 — API Gateway REST API</h3>
-        <img src="docs/screenshots/03-api-gateway.png" alt="API Gateway REST API overview" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">03 — Lambda Function</h3>
+        <img src="docs/screenshots/03-lambda-fn.png" alt="Lambda function in AWS console" style="width:100%;border-radius:8px;border:1px solid var(--border)">
       </div>
       <div class="card">
-        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">04 — /items Resource + Methods</h3>
-        <img src="docs/screenshots/04-resources-methods.png" alt="/items resource with GET and POST methods" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">04 — API Gateway Resources</h3>
+        <img src="docs/screenshots/04-api-gateway.png" alt="/items resource with GET and POST methods" style="width:100%;border-radius:8px;border:1px solid var(--border)">
       </div>
       <div class="card">
-        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">05 — Stage Deployment</h3>
-        <img src="docs/screenshots/05-deployment.png" alt="API Gateway stage deployment" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">05 — API Stage Deployed</h3>
+        <img src="docs/screenshots/05-api-stage.png" alt="API Gateway stage deployment with invoke URL" style="width:100%;border-radius:8px;border:1px solid var(--border)">
       </div>
       <div class="card">
-        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">06 — curl GET Response</h3>
-        <img src="docs/screenshots/06-get-test.png" alt="curl GET /items response" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">06 — GET /items Response</h3>
+        <img src="docs/screenshots/06-get-test.png" alt="curl GET /items JSON response" style="width:100%;border-radius:8px;border:1px solid var(--border)">
       </div>
       <div class="card">
-        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">07 — curl POST Response</h3>
-        <img src="docs/screenshots/07-post-test.png" alt="curl POST /items response" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">07 — POST /items Response</h3>
+        <img src="docs/screenshots/07-post-test.png" alt="curl POST /items JSON response" style="width:100%;border-radius:8px;border:1px solid var(--border)">
       </div>
       <div class="card">
-        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">08 — Cleanup Verified</h3>
-        <img src="docs/screenshots/08-cleanup-verified.png" alt="Cleanup complete all resources deleted" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">08 — CloudWatch Logs</h3>
+        <img src="docs/screenshots/08-cloudwatch-logs.png" alt="CloudWatch Lambda invocation logs" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">09 — Cleanup Verified</h3>
+        <img src="docs/screenshots/09-cleanup-verified.png" alt="Cleanup complete all resources deleted" style="width:100%;border-radius:8px;border:1px solid var(--border)">
       </div>
     </div>
   </section>

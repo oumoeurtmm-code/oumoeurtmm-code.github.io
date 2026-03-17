@@ -151,7 +151,7 @@ const DATA = [
   {
     tier: "Intermediate", accent: "#a78bfa", num: "02",
     projects: [
-      { id: 4,  category: "AWS",    title: "Lab 04 — Lambda + API Gateway REST API",      desc: "Build a serverless REST API with Lambda, API Gateway, IAM auth, and CloudWatch logging. Deploy with IaC.", tags: ["AWS","Lambda","API Gateway","IaC"] },
+      { id: 4,  category: "AWS",    title: "Lab 04 — Lambda + API Gateway REST API",      desc: "Build a serverless REST API with Lambda, API Gateway, IAM auth, and CloudWatch logging. Deploy with IaC.", tags: ["AWS","Lambda","API Gateway","IaC"], link: "https://oumoeurtmm-code.github.io/projects/04-lambda-api-gateway/" },
       { id: 5,  category: "AWS",    title: "Lab 05 — Multi-Tier ALB + Auto Scaling",       desc: "Deploy a multi-tier app with ALB, Auto Scaling Groups, Launch Templates, and CloudWatch dashboards.", tags: ["AWS","ALB","Auto Scaling","CloudWatch"] },
       { id: 6,  category: "AWS",    title: "Cloud Security Audit Tool",                   desc: "Python scripts that scan cloud accounts for unused roles, stale credentials, open SGs, and missing encryption.", tags: ["Python","AWS","Security"] },
       { id: 12, category: "FinOps", title: "Resource Tagging & Governance Framework",     desc: "Design and enforce a tagging strategy across AWS resources using Tag Policies and AWS Config rules.", tags: ["FinOps","Tagging","AWS Config"] },
@@ -189,6 +189,8 @@ DATA.forEach(t => t.projects.forEach(p => statuses[p.id] = "Planned"));
 statuses[1]  = "Complete";     // Lab 01 — S3 Static Website ✅
 statuses[2]  = "Complete";     // Lab 02 — EC2 + VPC ✅
 statuses[3]  = "Complete";     // Lab 03 — RDS + EC2 ✅
+statuses[4]  = "Complete";     // Lab 04 — Lambda + API Gateway ✅
+statuses[10] = "In Progress";  // AWS Cost Explorer Dashboard 🔵
 statuses[16] = "In Progress";  // n8n + OpenCode 🔵
 const collapsed = { Beginner: false, Intermediate: false, Advanced: false };
 let activeFilter = "All";
