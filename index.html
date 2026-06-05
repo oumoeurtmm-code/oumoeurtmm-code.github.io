@@ -1,330 +1,719 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Oumoeurt M · Cloud Engineering</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Oumoeurt Mousa · Cloud Infrastructure · FinOps · Cybersecurity</title>
+  <meta name="description" content="Portfolio of Oumoeurt Mousa — AWS labs, FinOps governance, Terraform roadmap, cloud security baseline, and project tracker." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #080b12;
-      --surface: #0d1117;
-      --border: #161d2b;
-      --border-hover: #243044;
-      --text: #cdd6e8;
-      --muted: #4a5568;
-      --faint: #1a2235;
-      --accent-blue: #38bdf8;
-      --accent-purple: #a78bfa;
-      --accent-rose: #fb7185;
-      --green: #10b981;
-      --slate: #64748b;
-    }
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'DM Mono', monospace;
-      min-height: 100vh;
+      --bg: #0f1720;
+      --bg-2: #121c26;
+      --surface: #16212c;
+      --surface-2: #1a2733;
+      --border: #2a3947;
+      --border-soft: rgba(255,255,255,0.08);
+      --text: #e8eef5;
+      --muted: #a3b2c0;
+      --subtle: #7f8c98;
+      --accent: #ff9900;
+      --accent-soft: rgba(255, 153, 0, 0.12);
+      --success: #6ac091;
+      --shadow: 0 12px 36px rgba(0,0,0,0.22);
+      --max: 1160px;
+      --radius: 16px;
     }
 
-    /* NAV */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(180deg, #0d141b 0%, #101922 100%);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .container {
+      width: min(var(--max), calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .mono {
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
     nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(15, 23, 32, 0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border-soft);
+    }
+
+    .nav-inner {
+      min-height: 72px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 20px 40px;
-      border-bottom: 1px solid var(--border);
-      position: sticky; top: 0;
-      background: rgba(8,11,18,0.92);
-      backdrop-filter: blur(12px);
-      z-index: 100;
-    }
-    .nav-logo {
-      font-family: 'Syne', sans-serif;
-      font-weight: 800; font-size: 15px;
-      color: var(--text); text-decoration: none;
-    }
-    .nav-logo span { color: var(--accent-blue); }
-    .nav-link {
-      font-size: 11px; color: var(--muted);
-      text-decoration: none; letter-spacing: 0.1em;
-      text-transform: uppercase; transition: color 0.2s;
-    }
-    .nav-link:hover { color: var(--text); }
-
-    /* HERO */
-    .hero {
-      max-width: 820px; margin: 0 auto;
-      padding: 80px 24px 60px;
-      animation: fadeUp 0.6s ease both;
-    }
-    .hero-label {
-      font-size: 10px; letter-spacing: 0.3em;
-      text-transform: uppercase; color: var(--accent-blue);
-      margin-bottom: 16px;
-    }
-    h1 {
-      font-family: 'Syne', sans-serif;
-      font-size: clamp(36px, 7vw, 64px);
-      font-weight: 800; line-height: 1.05;
-      margin-bottom: 20px;
-    }
-    h1 .line1 {
-      background: linear-gradient(135deg, #e2e8f0, #94a3b8);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text; display: block;
-    }
-    h1 .line2 { color: var(--accent-blue); display: block; }
-    .hero-desc {
-      font-size: 14px; color: var(--muted);
-      line-height: 1.7; max-width: 520px;
-      margin-bottom: 36px;
-    }
-    .hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; }
-    .btn-primary {
-      background: var(--accent-blue); color: #080b12;
-      border: none; border-radius: 8px;
-      padding: 11px 22px; font-size: 12px;
-      font-family: 'DM Mono', monospace;
-      font-weight: 500; cursor: pointer;
-      text-decoration: none; letter-spacing: 0.05em;
-      transition: opacity 0.2s, transform 0.2s;
-      display: inline-block;
-    }
-    .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
-    .btn-secondary {
-      background: transparent; color: var(--text);
-      border: 1px solid var(--border-hover); border-radius: 8px;
-      padding: 11px 22px; font-size: 12px;
-      font-family: 'DM Mono', monospace;
-      cursor: pointer; text-decoration: none;
-      letter-spacing: 0.05em; transition: border-color 0.2s, transform 0.2s;
-      display: inline-block;
-    }
-    .btn-secondary:hover { border-color: var(--slate); transform: translateY(-1px); }
-
-    /* SECTIONS */
-    .section {
-      max-width: 820px; margin: 0 auto;
-      padding: 0 24px 64px;
-    }
-    .section-label {
-      font-size: 10px; letter-spacing: 0.25em;
-      text-transform: uppercase; color: var(--muted);
-      margin-bottom: 24px;
-      display: flex; align-items: center; gap: 12px;
-    }
-    .section-label::after {
-      content: ''; flex: 1; height: 1px;
-      background: var(--border);
-    }
-
-    /* FOCUS CARDS */
-    .focus-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 12px; margin-bottom: 0;
-    }
-    .focus-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 11px; padding: 20px;
-      transition: border-color 0.2s, transform 0.2s;
-      animation: fadeUp 0.5s ease both;
-    }
-    .focus-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
-    .focus-icon { font-size: 20px; margin-bottom: 10px; }
-    .focus-title {
-      font-family: 'Syne', sans-serif;
-      font-size: 13px; font-weight: 700;
-      color: var(--text); margin-bottom: 6px;
-    }
-    .focus-desc { font-size: 11px; color: var(--muted); line-height: 1.55; }
-
-    /* CERTS */
-    .cert-row {
-      display: flex; gap: 10px; flex-wrap: wrap;
-    }
-    .cert-badge {
-      background: var(--faint);
-      border: 1px solid var(--border);
-      border-radius: 7px; padding: 7px 14px;
-      font-size: 11px; color: var(--slate);
-      letter-spacing: 0.04em;
-    }
-
-    /* TECH STACK */
-    .stack-row { display: flex; gap: 8px; flex-wrap: wrap; }
-    .stack-tag {
-      font-size: 11px; border-radius: 6px;
-      padding: 5px 10px; letter-spacing: 0.04em;
-    }
-
-    /* TRACKER CALLOUT */
-    .tracker-callout {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--accent-blue);
-      border-radius: 11px; padding: 24px 28px;
-      display: flex; align-items: center;
-      justify-content: space-between; gap: 20px;
+      gap: 16px;
       flex-wrap: wrap;
-      animation: fadeUp 0.5s 0.2s ease both;
     }
-    .callout-text h3 {
-      font-family: 'Syne', sans-serif;
-      font-size: 15px; font-weight: 700;
-      color: var(--text); margin-bottom: 5px;
-    }
-    .callout-text p { font-size: 12px; color: var(--muted); }
 
-    /* CONNECT */
-    .connect-row { display: flex; gap: 12px; flex-wrap: wrap; }
-    .connect-link {
-      background: var(--surface);
+    .brand {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .brand span { color: var(--accent); }
+
+    .nav-links {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      font-size: 14px;
+      color: var(--muted);
+      transition: color 0.2s ease;
+    }
+
+    .nav-links a:hover { color: var(--text); }
+
+    .hero {
+      padding: 84px 0 56px;
+      border-bottom: 1px solid var(--border-soft);
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.35fr 0.9fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    h1 {
+      margin-top: 14px;
+      font-size: clamp(38px, 6vw, 64px);
+      line-height: 1.04;
+      letter-spacing: -0.03em;
+      max-width: 11ch;
+    }
+
+    .lead {
+      margin-top: 20px;
+      font-size: 18px;
+      color: var(--muted);
+      max-width: 64ch;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 28px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
       border: 1px solid var(--border);
-      border-radius: 8px; padding: 10px 18px;
-      font-size: 12px; color: var(--muted);
-      text-decoration: none; transition: all 0.2s;
-      display: flex; align-items: center; gap: 7px;
+      transition: 0.2s ease;
     }
-    .connect-link:hover { border-color: var(--border-hover); color: var(--text); }
 
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(16px); }
-      to   { opacity: 1; transform: translateY(0); }
+    .btn-primary {
+      background: var(--accent);
+      color: #11161c;
+      border-color: var(--accent);
     }
-    @media (max-width: 600px) {
-      nav { padding: 16px 20px; }
-      .hero { padding: 50px 20px 40px; }
+
+    .btn-primary:hover { filter: brightness(1.05); }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.03);
+      border-color: #415261;
+    }
+
+    .panel,
+    .card,
+    .repo-card,
+    .metric {
+      background: linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.015));
+      border: 1px solid var(--border-soft);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+    }
+
+    .panel {
+      padding: 20px;
+    }
+
+    .panel h2 {
+      font-size: 15px;
+      margin-bottom: 14px;
+    }
+
+    .panel ul {
+      list-style: none;
+      display: grid;
+      gap: 12px;
+    }
+
+    .panel li {
+      font-size: 14px;
+      color: var(--muted);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding-bottom: 12px;
+    }
+
+    .panel li:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .section {
+      padding: 64px 0;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+
+    .section-head h2 {
+      font-size: 28px;
+      letter-spacing: -0.02em;
+    }
+
+    .section-head p {
+      color: var(--muted);
+      max-width: 70ch;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .metric {
+      padding: 20px;
+    }
+
+    .metric .value {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+
+    .metric .label {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .repo-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .repo-card {
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-height: 260px;
+    }
+
+    .repo-tag {
+      display: inline-flex;
+      align-self: flex-start;
+      font-size: 12px;
+      font-family: 'IBM Plex Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #ffbc57;
+      background: var(--accent-soft);
+      border: 1px solid rgba(255,153,0,0.22);
+      padding: 6px 10px;
+      border-radius: 999px;
+    }
+
+    .repo-card h3 {
+      font-size: 20px;
+      line-height: 1.2;
+    }
+
+    .repo-card p {
+      font-size: 15px;
+      color: var(--muted);
+    }
+
+    .repo-meta {
+      margin-top: auto;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .repo-meta span {
+      font-size: 12px;
+      color: var(--subtle);
+      padding: 6px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .card {
+      padding: 24px;
+    }
+
+    .card h3 {
+      font-size: 20px;
+      margin-bottom: 14px;
+    }
+
+    .card p {
+      font-size: 15px;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    .list {
+      list-style: none;
+      display: grid;
+      gap: 12px;
+    }
+
+    .list li {
+      position: relative;
+      padding-left: 16px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .list li::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--accent);
+      position: absolute;
+      left: 0;
+      top: 10px;
+    }
+
+    .tracker-callout {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      padding: 24px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,153,0,0.22);
+      background: linear-gradient(180deg, rgba(255,153,0,0.09), rgba(255,153,0,0.04));
+      box-shadow: var(--shadow);
+    }
+
+    .tracker-callout h3 {
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+
+    .tracker-callout p {
+      color: var(--muted);
+      max-width: 70ch;
+    }
+
+    .cert-row,
+    .stack-row,
+    .connect-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .cert-badge,
+    .stack-tag,
+    .connect-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 40px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .connect-link:hover {
+      color: var(--text);
+      border-color: #465563;
+    }
+
+    .footer {
+      padding: 40px 0 64px;
+      border-top: 1px solid var(--border-soft);
+    }
+
+    .footer-box {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .footer p {
+      color: var(--muted);
+      max-width: 68ch;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--success);
+      box-shadow: 0 0 0 6px rgba(106,192,145,0.12);
+    }
+
+    @media (max-width: 980px) {
+      .hero-grid,
+      .metrics,
+      .repo-grid,
+      .two-col {
+        grid-template-columns: 1fr;
+      }
+
+      .hero { padding-top: 56px; }
+      .section { padding: 48px 0; }
+
+      .nav-inner {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 14px 0;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .hero .lead { font-size: 16px; }
+      .section-head h2 { font-size: 24px; }
+      .card, .panel, .repo-card, .metric, .tracker-callout { padding: 18px; }
+      .nav-links { gap: 12px; }
+      .nav-links a { font-size: 13px; }
     }
   </style>
 </head>
 <body>
-
-<nav>
-  <a href="index.html" class="nav-logo">Oumoeurt<span>.</span>M</a>
-  <a href="projects/project-tracker/" class="nav-link">Project Tracker →</a>
-</nav>
-
-<div class="hero">
-  <div class="hero-label">FinOps Certified Practitioner · Cloud Engineer · Security · Orange, CA</div>
-  <h1>
-    <span class="line1">IT Professional</span>
-    <span class="line2">13+ Years.</span>
-  </h1>
-  <p class="hero-desc">
-    IT professional with 13+ years in enterprise infrastructure, identity systems, and cloud engineering. Military &amp; corporate background across AWS, Azure, GCP, Okta, and endpoint management.
-    Currently deploying a multi-tier AWS architecture with ALB, Auto Scaling, and integrated FinOps cost monitoring — earning AWS Solutions Architect Associate.
-  </p>
-  <div class="hero-ctas">
-    <a href="projects/project-tracker/" class="btn-primary">📈 View Project Tracker</a>
-    <a href="https://www.linkedin.com/in/ommousa" target="_blank" class="btn-secondary">LinkedIn →</a>
-  </div>
-</div>
-
-<div class="section">
-  <div class="section-label">Focus Areas</div>
-  <div class="focus-grid">
-    <div class="focus-card" style="animation-delay:0.05s; border-top: 2px solid #38bdf8">
-      <div class="focus-icon">☁️</div>
-      <div class="focus-title">Cloud Engineering</div>
-      <div class="focus-desc">AWS, Azure, GCP — VPC, EC2, S3, Lambda, IAM, IaC with Terraform. Multi-cloud infrastructure design and operations.</div>
+  <nav>
+    <div class="container nav-inner">
+      <a class="brand" href="#top">Oumoeurt<span>.</span></a>
+      <div class="nav-links">
+        <a href="#work">Work</a>
+        <a href="#tracker">Tracker</a>
+        <a href="#certs">Certs</a>
+        <a href="#stack">Stack</a>
+        <a href="#contact">Links</a>
+      </div>
     </div>
-    <div class="focus-card" style="animation-delay:0.1s; border-top: 2px solid #a78bfa">
-      <div class="focus-icon">🔐</div>
-      <div class="focus-title">Identity & Security</div>
-      <div class="focus-desc">Okta, Active Directory, Azure AD, SSO, SCIM, Duo MFA, SentinelOne EDR. Zero-trust access and endpoint protection.</div>
+  </nav>
+
+  <header class="hero" id="top">
+    <div class="container hero-grid">
+      <div>
+        <span class="eyebrow">Cloud Infrastructure · FinOps · Cybersecurity</span>
+        <h1>Building secure, managed, and cost-aware cloud systems.</h1>
+        <p class="lead">
+          I’m Oumoeurt Mousa — an IT professional with enterprise support, cloud, IAM, and operations experience, including Garmin and 8 years of service in the US Navy. I’m building an evidence-first portfolio around AWS infrastructure, FinOps governance, Terraform progression, and cloud security baselines.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="https://github.com/oumoeurtmm-code" target="_blank" rel="noopener noreferrer">View GitHub</a>
+          <a class="btn btn-secondary" href="projects/project-tracker/">Open Tracker</a>
+          <a class="btn btn-secondary" href="https://www.linkedin.com/in/ommousa" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <h2>Current Direction</h2>
+        <ul>
+          <li><strong>AWS labs</strong><br>Building through S3, EC2/VPC, RDS, Lambda, ALB/ASG, and structured cleanup workflows.</li>
+          <li><strong>FinOps framework</strong><br>Tagging standards, budgets, anomaly detection, spend visibility, and Python automation.</li>
+          <li><strong>Terraform track</strong><br>Progressing from manual AWS builds to modules, environments, remote state, and CI validation.</li>
+          <li><strong>Security baseline</strong><br>IAM, logging, CIS-aware controls, incident response, and governance support documentation.</li>
+        </ul>
+      </aside>
     </div>
-    <div class="focus-card" style="animation-delay:0.15s; border-top: 2px solid #fb7185">
-      <div class="focus-icon">🤖</div>
-      <div class="focus-title">AI-Assisted IT Ops</div>
-      <div class="focus-desc">n8n + OpenCode orchestrating Claude Code, Gemini, Grok, and Perplexity for provisioning, access control, and runbook automation.</div>
+  </header>
+
+  <main>
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Snapshot</span>
+            <h2>What this portfolio is built to show</h2>
+          </div>
+          <p>
+            This site is structured for GovCon-aligned and private-sector cloud/security hiring: proof of execution, operational discipline, security awareness, and cost governance — not generic developer branding.
+          </p>
+        </div>
+
+        <div class="metrics">
+          <div class="metric">
+            <div class="value">3</div>
+            <div class="label">Core public portfolio pillars: AWS labs, FinOps governance, and cloud security baseline</div>
+          </div>
+          <div class="metric">
+            <div class="value">8</div>
+            <div class="label">Years of US Navy service shaping operational discipline and documentation rigor</div>
+          </div>
+          <div class="metric">
+            <div class="value">AWS + FinOps</div>
+            <div class="label">Primary center of gravity with security and IAM layered in</div>
+          </div>
+          <div class="metric">
+            <div class="value">Next</div>
+            <div class="label">Terraform modules, multi-environment patterns, and validation pipelines</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="work">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Featured Work</span>
+            <h2>Portfolio pillars</h2>
+          </div>
+          <p>
+            Each repo shows a different part of the same story: infrastructure execution, cost governance, and security/compliance maturity.
+          </p>
+        </div>
+
+        <div class="repo-grid">
+          <a class="repo-card" href="https://github.com/oumoeurtmm-code/aws-cloud-labs" target="_blank" rel="noopener noreferrer">
+            <span class="repo-tag">AWS Labs</span>
+            <h3>aws-cloud-labs</h3>
+            <p>
+              Sequential AWS projects covering static hosting, EC2/VPC, RDS, Lambda/API Gateway, and the path toward ALB/Auto Scaling and Terraform-managed infrastructure.
+            </p>
+            <div class="repo-meta">
+              <span>EC2</span>
+              <span>VPC</span>
+              <span>RDS</span>
+              <span>Lambda</span>
+              <span>Terraform Track</span>
+            </div>
+          </a>
+
+          <a class="repo-card" href="https://github.com/oumoeurtmm-code/finops-cloud-governance" target="_blank" rel="noopener noreferrer">
+            <span class="repo-tag">FinOps</span>
+            <h3>finops-cloud-governance</h3>
+            <p>
+              Cost governance work focused on AWS Budgets, anomaly detection, tagging discipline, resource accountability, and automation that turns spend data into action.
+            </p>
+            <div class="repo-meta">
+              <span>Budgets</span>
+              <span>Tagging</span>
+              <span>Cost Explorer</span>
+              <span>Python</span>
+              <span>Governance</span>
+            </div>
+          </a>
+
+          <a class="repo-card" href="https://github.com/oumoeurtmm-code/cloud-security-baseline" target="_blank" rel="noopener noreferrer">
+            <span class="repo-tag">Security</span>
+            <h3>cloud-security-baseline</h3>
+            <p>
+              AWS security baseline repo covering IAM least privilege, CIS-aware guardrails, logging standards, incident response, and governance support documentation.
+            </p>
+            <div class="repo-meta">
+              <span>IAM</span>
+              <span>CIS</span>
+              <span>Logging</span>
+              <span>IR</span>
+              <span>NIST Support</span>
+            </div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="tracker">
+      <div class="container">
+        <div class="tracker-callout">
+          <div>
+            <span class="eyebrow">Project Tracker</span>
+            <h3>Cloud &amp; FinOps Learning Roadmap</h3>
+            <p>
+              AWS labs from static site to multi-tier architecture — EC2, VPC, Lambda, RDS, ALB, Auto Scaling, Terraform progression, and portfolio milestones tracked in one place.
+            </p>
+          </div>
+          <a href="projects/project-tracker/" class="btn btn-primary">Open Tracker</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container two-col">
+        <div class="card">
+          <span class="eyebrow">Current Focus</span>
+          <h3>What I’m improving right now</h3>
+          <ul class="list">
+            <li>Completing the AWS lab sequence through multi-tier load balancing, auto scaling, and stronger environment patterns.</li>
+            <li>Expanding manual AWS builds into Terraform-managed infrastructure with modules and reusable environments.</li>
+            <li>Strengthening FinOps repo depth through spend reporting, tagging compliance, and anomaly response workflows.</li>
+            <li>Improving governance documentation so security work is tied to operational reporting and review processes.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <span class="eyebrow">Operating Style</span>
+          <h3>How I approach the work</h3>
+          <ul class="list">
+            <li>Operational discipline shaped by enterprise support environments and military service.</li>
+            <li>Strong bias toward documentation, cleanup, repeatability, and clear handoff quality.</li>
+            <li>Infrastructure thinking that connects cost, identity, security, and platform reliability.</li>
+            <li>Portfolio strategy built around real project proof, not just certifications or course completion.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="certs">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Certifications</span>
+            <h2>Validated fundamentals</h2>
+          </div>
+        </div>
+
+        <div class="cert-row" style="margin-bottom:12px;">
+          <span class="cert-badge" style="color:#ffbc57;border-color:rgba(255,153,0,0.24);background:rgba(255,153,0,0.10);font-weight:600;">FinOps Certified Practitioner</span>
+          <a class="cert-badge" href="https://verify.skilljar.com/c/66rjv7grzopd" target="_blank" rel="noopener noreferrer">FinOps Foundation · Mar 2026 – Mar 2028 · Verify</a>
+        </div>
+
+        <div class="cert-row">
+          <span class="cert-badge">AWS Cloud Practitioner</span>
+          <span class="cert-badge">CompTIA Security+ (Aug 2025)</span>
+          <span class="cert-badge">CompTIA Network+ (Aug 2025)</span>
+          <span class="cert-badge">CompTIA A+</span>
+          <span class="cert-badge">HDI Desktop Advanced Support</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="stack">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Tech Stack</span>
+            <h2>Tools I use across cloud, support, IAM, and automation</h2>
+          </div>
+        </div>
+
+        <div class="stack-row">
+          <span class="stack-tag">AWS</span>
+          <span class="stack-tag">Azure</span>
+          <span class="stack-tag">GCP</span>
+          <span class="stack-tag">Terraform</span>
+          <span class="stack-tag">Python</span>
+          <span class="stack-tag">PowerShell</span>
+          <span class="stack-tag">Bash</span>
+          <span class="stack-tag">Docker</span>
+          <span class="stack-tag">Linux</span>
+          <span class="stack-tag">Okta</span>
+          <span class="stack-tag">Active Directory</span>
+          <span class="stack-tag">Azure AD</span>
+          <span class="stack-tag">Duo MFA</span>
+          <span class="stack-tag">SentinelOne</span>
+          <span class="stack-tag">JAMF</span>
+          <span class="stack-tag">Puppet</span>
+          <span class="stack-tag">n8n</span>
+          <span class="stack-tag">JIRA</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="contact">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Links</span>
+            <h2>Where to find the work</h2>
+          </div>
+        </div>
+
+        <div class="connect-row">
+          <a href="mailto:oumoeurt.m.m@gmail.com" class="connect-link">oumoeurt.m.m@gmail.com</a>
+          <a href="https://www.linkedin.com/in/ommousa" target="_blank" rel="noopener noreferrer" class="connect-link">linkedin.com/in/ommousa</a>
+          <a href="https://github.com/oumoeurtmm-code" target="_blank" rel="noopener noreferrer" class="connect-link">github.com/oumoeurtmm-code</a>
+          <a href="https://verify.skilljar.com/c/66rjv7grzopd" target="_blank" rel="noopener noreferrer" class="connect-link">FinOps Certification Verification</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-box">
+      <p>
+        Built to reflect a serious transition into cloud infrastructure, FinOps, and security-aware engineering — with public proof centered on GitHub projects, governance maturity, and practical AWS execution.
+      </p>
+      <div class="status">
+        <span class="status-dot"></span>
+        <span>Active portfolio build</span>
+      </div>
     </div>
-    <div class="focus-card" style="animation-delay:0.2s; border-top: 2px solid #10b981">
-      <div class="focus-icon">💰</div>
-      <div class="focus-title">FinOps</div>
-      <div class="focus-desc">Cloud cost optimization, resource governance, tagging standards, and financial accountability across multi-cloud environments.</div>
-    </div>
-  </div>
-</div>
-
-<div class="section">
-  <div class="section-label">Active Projects</div>
-  <div class="tracker-callout" style="margin-bottom:12px;border-left-color:#38bdf8">
-    <div class="callout-text">
-      <h3>Lab 05 — Multi-Tier ALB + Auto Scaling <span style="font-size:11px;color:#38bdf8;margin-left:8px">In Progress</span></h3>
-      <p>Deploying a production-grade multi-tier architecture with an Application Load Balancer, Auto Scaling Group, CloudWatch alarms, and integrated FinOps cost guardrails — the capstone AWS lab.</p>
-    </div>
-    <a href="projects/project-tracker/" class="btn-primary">View Tracker →</a>
-  </div>
-  <div class="tracker-callout">
-    <div class="callout-text">
-      <h3>Cloud & FinOps Learning Roadmap</h3>
-      <p>AWS labs from static site to multi-tier architecture — EC2, VPC, Lambda, RDS, ALB, Auto Scaling, and more. Track progress live.</p>
-    </div>
-    <a href="projects/project-tracker/" class="btn-primary">Open Tracker →</a>
-  </div>
-</div>
-
-<div class="section">
-  <div class="section-label">Certifications</div>
-  <div class="cert-row" style="margin-bottom:12px;">
-    <span class="cert-badge" style="color:#f5a623;border-color:#f5a62344;background:#f5a62311;font-weight:600;">🏅 FinOps Certified Practitioner</span>
-    <span class="cert-badge" style="font-size:10px;color:#64748b;">FinOps Foundation · Mar 2026 – Mar 2028 · <a href="https://verify.skilljar.com/c/66rjv7grzopd" target="_blank" style="color:#38bdf8;text-decoration:none;">Verify ↗</a></span>
-  </div>
-  <div class="cert-row">
-    <span class="cert-badge">AWS Cloud Practitioner</span>
-    <span class="cert-badge">CompTIA Security+ (Aug 2025)</span>
-    <span class="cert-badge">CompTIA Network+ (Aug 2025)</span>
-    <span class="cert-badge">CompTIA A+</span>
-    <span class="cert-badge">HDI Desktop Advanced Support</span>
-  </div>
-</div>
-
-<div class="section">
-  <div class="section-label">Tech Stack</div>
-  <div class="stack-row">
-    <span class="stack-tag" style="color:#38bdf8;background:#38bdf811;border:1px solid #38bdf822">AWS</span>
-    <span class="stack-tag" style="color:#38bdf8;background:#38bdf811;border:1px solid #38bdf822">Azure</span>
-    <span class="stack-tag" style="color:#38bdf8;background:#38bdf811;border:1px solid #38bdf822">GCP</span>
-    <span class="stack-tag" style="color:#a78bfa;background:#a78bfa11;border:1px solid #a78bfa22">Okta</span>
-    <span class="stack-tag" style="color:#a78bfa;background:#a78bfa11;border:1px solid #a78bfa22">Active Directory</span>
-    <span class="stack-tag" style="color:#a78bfa;background:#a78bfa11;border:1px solid #a78bfa22">Azure AD</span>
-    <span class="stack-tag" style="color:#a78bfa;background:#a78bfa11;border:1px solid #a78bfa22">Duo MFA</span>
-    <span class="stack-tag" style="color:#fb7185;background:#fb718511;border:1px solid #fb718522">n8n</span>
-    <span class="stack-tag" style="color:#fb7185;background:#fb718511;border:1px solid #fb718522">OpenCode</span>
-    <span class="stack-tag" style="color:#fb7185;background:#fb718511;border:1px solid #fb718522">Claude Code</span>
-    <span class="stack-tag" style="color:#fb7185;background:#fb718511;border:1px solid #fb718522">Gemini</span>
-    <span class="stack-tag" style="color:#fb7185;background:#fb718511;border:1px solid #fb718522">Grok</span>
-    <span class="stack-tag" style="color:#10b981;background:#10b98111;border:1px solid #10b98122">Python</span>
-    <span class="stack-tag" style="color:#10b981;background:#10b98111;border:1px solid #10b98122">PowerShell</span>
-    <span class="stack-tag" style="color:#10b981;background:#10b98111;border:1px solid #10b98122">Bash</span>
-    <span class="stack-tag" style="color:#10b981;background:#10b98111;border:1px solid #10b98122">Puppet</span>
-    <span class="stack-tag" style="color:#f59e0b;background:#f59e0b11;border:1px solid #f59e0b22">JAMF</span>
-    <span class="stack-tag" style="color:#f59e0b;background:#f59e0b11;border:1px solid #f59e0b22">SentinelOne</span>
-    <span class="stack-tag" style="color:#f59e0b;background:#f59e0b11;border:1px solid #f59e0b22">Terraform</span>
-    <span class="stack-tag" style="color:#f59e0b;background:#f59e0b11;border:1px solid #f59e0b22">Docker</span>
-    <span class="stack-tag" style="color:#f59e0b;background:#f59e0b11;border:1px solid #f59e0b22">Linux</span>
-    <span class="stack-tag" style="color:#f59e0b;background:#f59e0b11;border:1px solid #f59e0b22">JIRA</span>
-  </div>
-</div>
-
-<div class="section">
-  <div class="section-label">Let's Connect</div>
-  <div class="connect-row">
-    <a href="mailto:oumoeurt.m.m@gmail.com" class="connect-link">📧 oumoeurt.m.m@gmail.com</a>
-    <a href="https://www.linkedin.com/in/ommousa" target="_blank" class="connect-link">🔗 linkedin.com/in/ommousa</a>
-    <a href="https://github.com/oumoeurtmm-code" target="_blank" class="connect-link">💻 github.com/oumoeurtmm-code</a>
-    <a href="https://verify.skilljar.com/c/66rjv7grzopd" target="_blank" class="connect-link">🏅 FinOps Cert Verify</a>
-  </div>
-</div>
-
-<div style="text-align:center;padding:40px 24px;font-size:11px;color:#2d3748;border-top:1px solid #161d2b;margin-top:20px;">
-  Built with curiosity · Powered by cloud · Secured by default
-</div>
-
+  </footer>
 </body>
 </html>
