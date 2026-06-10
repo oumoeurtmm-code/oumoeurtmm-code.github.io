@@ -521,4 +521,486 @@
 
     .category-chip,
     .tag {
-      
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 0 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .category-chip {
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .tag {
+      color: var(--subtle);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .project-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      color: var(--text);
+      transition: 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .footer {
+      padding: 12px 0 56px;
+      border-top: 1px solid var(--border-soft);
+    }
+
+    .footer-box {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      margin-top: 28px;
+    }
+
+    .footer-copy {
+      color: var(--muted);
+      max-width: 68ch;
+      font-size: 14px;
+    }
+
+    .footer-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 40px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .footer-link:hover {
+      color: var(--text);
+      border-color: #465563;
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    @media (max-width: 980px) {
+      .hero-grid,
+      .overview {
+        grid-template-columns: 1fr;
+      }
+
+      .hero { padding-top: 56px; }
+
+      .nav-inner {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 14px 0;
+      }
+
+      .project-card,
+      .update-bar {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .lead { font-size: 16px; }
+      .panel, .toolbar, .metric, .project-card, .tier-projects, .footer-box, .empty-state, .update-bar { padding: 18px; }
+      .tier-header { grid-template-columns: auto 1fr auto; }
+      .tier-summary { grid-column: 1 / -1; }
+      .toolbar-row, .update-bar { flex-direction: column; }
+      .footer-box { align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="container nav-inner">
+      <a class="brand" href="../../index.html">Oumoeurt<span>.</span></a>
+      <div class="nav-actions">
+        <button class="mini-btn" type="button" id="reset-statuses">Reset Statuses</button>
+        <a class="back-link" href="../../index.html">← Back to Portfolio</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="container hero-grid">
+      <div>
+        <span class="eyebrow">Cloud Infrastructure · FinOps · Cybersecurity</span>
+        <h1>Project Tracker</h1>
+        <p class="lead">
+          A portfolio roadmap that matches the main site’s visual system while adding persistent status tracking, smoother tier transitions, and a visible update trail for active portfolio work.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="https://github.com/oumoeurtmm-code" target="_blank" rel="noopener noreferrer">View GitHub</a>
+          <a class="btn btn-secondary" href="../../index.html">Back Home</a>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <div class="overview">
+          <div class="metric metric-wide">
+            <span class="stat-label">Overall Progress</span>
+            <div class="value" id="pct">0%</div>
+            <div class="progress-track"><div class="progress-fill" id="bar"></div></div>
+            <div class="label">Measured from projects marked complete.</div>
+          </div>
+          <div class="metric">
+            <span class="stat-label">Planned</span>
+            <div class="value" id="count-planned-num">0</div>
+            <div class="label" id="count-planned">Projects queued</div>
+          </div>
+          <div class="metric">
+            <span class="stat-label">In Progress</span>
+            <div class="value" id="count-inprogress-num">0</div>
+            <div class="label" id="count-inprogress">Active builds</div>
+          </div>
+          <div class="metric metric-wide">
+            <span class="stat-label">Complete</span>
+            <div class="value" id="count-complete-num">0</div>
+            <div class="label" id="count-complete">Completed projects</div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </header>
+
+  <main>
+    <section class="section">
+      <div class="container">
+        <div class="update-bar">
+          <div>
+            <span class="eyebrow">Tracker Status</span>
+            <div class="status-line" id="last-updated">No saved tracker updates yet.</div>
+          </div>
+          <div class="summary-row">
+            <span class="summary-chip" id="focus-chip">All categories · All statuses</span>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="toolbar-row">
+            <div class="toolbar-head">
+              <h2>Filter the roadmap</h2>
+              <p>Switch between cloud, FinOps, and automation tracks or narrow the board by project status.</p>
+            </div>
+            <div class="toolbar-group" id="category-tabs">
+              <button class="toolbar-btn active" data-cat="All">All Projects</button>
+              <button class="toolbar-btn" data-cat="AWS"><span class="dot" style="background: var(--aws)"></span>AWS / Cloud</button>
+              <button class="toolbar-btn" data-cat="FinOps"><span class="dot" style="background: var(--finops)"></span>FinOps</button>
+              <button class="toolbar-btn" data-cat="IT Automation"><span class="dot" style="background: var(--automation)"></span>IT Automation</button>
+            </div>
+          </div>
+          <div class="toolbar-row">
+            <div class="toolbar-head">
+              <h2>Status view</h2>
+              <p>Use status filters to isolate what is queued, active, or already shipped.</p>
+            </div>
+            <div class="toolbar-group" id="filters">
+              <button class="toolbar-btn active" data-filter="All">All Statuses</button>
+              <button class="toolbar-btn" data-filter="Planned">Planned</button>
+              <button class="toolbar-btn" data-filter="In Progress">In Progress</button>
+              <button class="toolbar-btn" data-filter="Complete">Complete</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container board" id="tiers" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-box">
+      <p class="footer-copy">
+        Built to match the main portfolio’s darker cloud-and-governance aesthetic while preserving the tracker’s interactive roadmap behavior and saving progress locally in the browser.
+      </p>
+      <div class="footer-links">
+        <a href="mailto:oumoeurt.m.m@gmail.com" class="footer-link">Email</a>
+        <a href="https://www.linkedin.com/in/ommousa" target="_blank" rel="noopener noreferrer" class="footer-link">LinkedIn</a>
+        <a href="https://github.com/oumoeurtmm-code" target="_blank" rel="noopener noreferrer" class="footer-link">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const DATA = [
+      {
+        tier: "Beginner", accent: "#ff9900", num: "01",
+        projects: [
+          { id: 1, category: "AWS", title: "Lab 01 — S3 Static Website + CloudFront + IAM + CloudWatch", desc: "Host a static website on S3 with CloudFront CDN, OAC, IAM policies, access logging, and CloudWatch monitoring.", tags: ["AWS","S3","CloudFront","IAM","CloudWatch"], link: "https://github.com/oumoeurtmm-code/ai-terminal-workflow" },
+          { id: 2, category: "AWS", title: "Lab 02 — EC2 + VPC + Security Groups", desc: "Deploy a hardened EC2 instance in a custom VPC with public/private subnets, NAT Gateway, and SSM Session Manager — no open SSH.", tags: ["AWS","EC2","VPC","SSM","Security Groups"], link: "https://oumoeurtmm-code.github.io/projects/02-ec2-vpc-security-groups/" },
+          { id: 3, category: "AWS", title: "Lab 03 — RDS + EC2 Two-Tier App", desc: "Build a two-tier architecture with EC2 app server and RDS database in a private subnet. Secrets Manager for credentials.", tags: ["AWS","RDS","EC2","Secrets Manager"], link: "https://oumoeurtmm-code.github.io/projects/03-rds-ec2-two-tier/" },
+          { id: 16, category: "IT Automation", title: "n8n + OpenCode Multi-Model IT Automation", desc: "Orchestrate Claude Code, Gemini, Grok, and Perplexity via OpenCode + n8n for provisioning, access control, and cloud ops.", tags: ["n8n","OpenCode","Claude Code","Okta","Entra"], link: "https://oumoeurtmm-code.github.io/projects/n8n-opencode-it-automation/" },
+          { id: 10, category: "FinOps", title: "AWS Cost Explorer Dashboard", desc: "Set up Cost Explorer, create custom cost reports, and build a spending dashboard broken down by service.", tags: ["FinOps","Cost Explorer","AWS"] },
+          { id: 11, category: "FinOps", title: "Budget Alerts & Anomaly Detection", desc: "Configure AWS Budgets with threshold alerts and enable Cost Anomaly Detection to catch unexpected spend.", tags: ["FinOps","AWS Budgets","Anomaly Detection"] }
+        ]
+      },
+      {
+        tier: "Intermediate", accent: "#ffbc57", num: "02",
+        projects: [
+          { id: 4, category: "AWS", title: "Lab 04 — Lambda + API Gateway REST API", desc: "Build a serverless REST API with Lambda, API Gateway, IAM auth, and CloudWatch logging. Deploy with IaC.", tags: ["AWS","Lambda","API Gateway","IaC"], link: "https://oumoeurtmm-code.github.io/projects/04-lambda-api-gateway/" },
+          { id: 5, category: "AWS", title: "Lab 05 — Multi-Tier ALB + Auto Scaling", desc: "Deploy a multi-tier app with ALB, Auto Scaling Groups, Launch Templates, and CloudWatch dashboards.", tags: ["AWS","ALB","Auto Scaling","CloudWatch"] },
+          { id: 6, category: "AWS", title: "Cloud Security Audit Tool", desc: "Python scripts that scan cloud accounts for unused roles, stale credentials, open SGs, and missing encryption.", tags: ["Python","AWS","Security"] },
+          { id: 12, category: "FinOps", title: "Resource Tagging & Governance Framework", desc: "Design and enforce a tagging strategy across AWS resources using Tag Policies and AWS Config rules.", tags: ["FinOps","Tagging","AWS Config"] },
+          { id: 13, category: "FinOps", title: "Cloud Waste Identification Tool", desc: "Python script that scans for idle EC2s, unattached EBS volumes, old snapshots, and unused EIPs.", tags: ["FinOps","Python","AWS","Cost Optimization"] },
+          { id: 14, category: "FinOps", title: "Reserved Instances & Savings Plans Analysis", desc: "Analyze on-demand usage patterns and model RI and Savings Plans coverage to produce a cost reduction report.", tags: ["FinOps","RI","Savings Plans","Cost Analysis"] }
+        ]
+      },
+      {
+        tier: "Advanced", accent: "#ffd27f", num: "03",
+        projects: [
+          { id: 7, category: "AWS", title: "Real-Time Data Pipeline & Analytics", desc: "Streaming data pipeline: Kinesis to Lambda to S3 to Athena to QuickSight dashboard.", tags: ["AWS","Kinesis","Analytics"] },
+          { id: 8, category: "AWS", title: "Hybrid/Multicloud Architecture Design", desc: "Solution spanning on-premises and multi-cloud with secure connectivity, failover, and IaC.", tags: ["AWS","Terraform","Architecture"] },
+          { id: 9, category: "AWS", title: "Advanced Cloud Security & Automation Platform", desc: "Full automation: IaC, policy-as-code, SIEM, alerting, and auto-remediation.", tags: ["Security","IaC","Automation"] },
+          { id: 17, category: "IT Automation", title: "Okta Workflows + n8n Access Governance Pipeline", desc: "Full IGA pipeline: Okta Workflows for provisioning triggers, n8n for orchestration, ConductorOne for access reviews.", tags: ["Okta","n8n","IGA","ConductorOne"] },
+          { id: 15, category: "FinOps", title: "FinOps Cost Monitoring & Reporting Platform", desc: "Full cost visibility: AWS Cost and Usage Reports to Lambda to S3 to QuickSight dashboard.", tags: ["FinOps","CUR","Lambda","QuickSight"] }
+        ]
+      }
+    ];
+
+    const STATUS_ORDER = ["Planned", "In Progress", "Complete"];
+    const STATUS_STYLE = {
+      "Planned": { color: "var(--planned)", bg: "var(--planned-soft)", border: "rgba(137,160,182,0.24)" },
+      "In Progress": { color: "var(--warning)", bg: "var(--warning-soft)", border: "rgba(255,188,87,0.24)" },
+      "Complete": { color: "var(--success)", bg: "var(--success-soft)", border: "rgba(106,192,145,0.24)" }
+    };
+
+    const CATEGORY_STYLE = {
+      "AWS": { color: "var(--aws)", bg: "var(--aws-soft)", border: "rgba(89,184,255,0.24)" },
+      "FinOps": { color: "var(--finops)", bg: "var(--finops-soft)", border: "rgba(124,212,162,0.24)" },
+      "IT Automation": { color: "var(--automation)", bg: "var(--automation-soft)", border: "rgba(196,150,255,0.24)" }
+    };
+
+    const DEFAULT_STATUSES = {};
+    DATA.forEach(t => t.projects.forEach(p => DEFAULT_STATUSES[p.id] = "Planned"));
+    DEFAULT_STATUSES[1] = "Complete";
+    DEFAULT_STATUSES[2] = "Complete";
+    DEFAULT_STATUSES[3] = "Complete";
+    DEFAULT_STATUSES[4] = "Complete";
+    DEFAULT_STATUSES[5] = "In Progress";
+    DEFAULT_STATUSES[10] = "In Progress";
+    DEFAULT_STATUSES[16] = "Complete";
+
+    const STORAGE_KEY = "om-project-tracker-statuses-v2";
+    const UPDATE_KEY = "om-project-tracker-last-updated-v2";
+
+    function safeStorageGet(key) {
+      try {
+        return localStorage.getItem(key);
+      } catch {
+        return null;
+      }
+    }
+
+    function safeStorageSet(key, value) {
+      try {
+        localStorage.setItem(key, value);
+      } catch {}
+    }
+
+    function loadStatuses() {
+      try {
+        const raw = safeStorageGet(STORAGE_KEY);
+        if (!raw) return { ...DEFAULT_STATUSES };
+        return { ...DEFAULT_STATUSES, ...JSON.parse(raw) };
+      } catch {
+        return { ...DEFAULT_STATUSES };
+      }
+    }
+
+    let statuses = loadStatuses();
+    const collapsed = { Beginner: false, Intermediate: false, Advanced: false };
+    let activeFilter = "All";
+    let activeCategory = "All";
+
+    function saveStatuses() {
+      safeStorageSet(STORAGE_KEY, JSON.stringify(statuses));
+      safeStorageSet(UPDATE_KEY, new Date().toISOString());
+    }
+
+    function allProjects() {
+      return DATA.flatMap(t => t.projects);
+    }
+
+    function cycleStatus(id) {
+      const i = STATUS_ORDER.indexOf(statuses[id]);
+      statuses[id] = STATUS_ORDER[(i + 1) % STATUS_ORDER.length];
+      saveStatuses();
+      render();
+    }
+
+    function resetStatuses() {
+      statuses = { ...DEFAULT_STATUSES };
+      safeStorageSet(STORAGE_KEY, JSON.stringify(statuses));
+      safeStorageSet(UPDATE_KEY, new Date().toISOString());
+      render();
+    }
+
+    function formatTimestamp(iso) {
+      if (!iso) return "No saved tracker updates yet.";
+      const date = new Date(iso);
+      if (Number.isNaN(date.getTime())) return "No saved tracker updates yet.";
+      return "Last updated · " + date.toLocaleString([], {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+      });
+    }
+
+    function updateProgress() {
+      const all = allProjects();
+      const planned = all.filter(p => statuses[p.id] === "Planned").length;
+      const inProgress = all.filter(p => statuses[p.id] === "In Progress").length;
+      const complete = all.filter(p => statuses[p.id] === "Complete").length;
+      const pct = Math.round((complete / all.length) * 100);
+
+      document.getElementById("pct").textContent = pct + "%";
+      document.getElementById("bar").style.width = pct + "%";
+      document.getElementById("count-planned-num").textContent = planned;
+      document.getElementById("count-inprogress-num").textContent = inProgress;
+      document.getElementById("count-complete-num").textContent = complete;
+      document.getElementById("count-planned").textContent = planned === 1 ? "Project queued" : "Projects queued";
+      document.getElementById("count-inprogress").textContent = inProgress === 1 ? "Active build" : "Active builds";
+      document.getElementById("count-complete").textContent = complete === 1 ? "Completed project" : "Completed projects";
+
+      const lastUpdatedValue = safeStorageGet(UPDATE_KEY);
+      document.getElementById("last-updated").textContent = formatTimestamp(lastUpdatedValue);
+      document.getElementById("focus-chip").textContent =
+        `${activeCategory === "All" ? "All categories" : activeCategory} · ${activeFilter === "All" ? "All statuses" : activeFilter}`;
+    }
+
+    function render() {
+      updateProgress();
+      const container = document.getElementById("tiers");
+      container.innerHTML = "";
+      let anyVisible = false;
+
+      DATA.forEach(tierData => {
+        let visible = tierData.projects;
+        if (activeCategory !== "All") visible = visible.filter(project => project.category === activeCategory);
+        if (activeFilter !== "All") visible = visible.filter(project => statuses[project.id] === activeFilter);
+        if (visible.length === 0) return;
+        anyVisible = true;
+
+        const doneCount = tierData.projects.filter(project => statuses[project.id] === "Complete").length;
+        const section = document.createElement("section");
+        section.className = "tier-block" + (collapsed[tierData.tier] ? " collapsed" : "");
+
+        const header = document.createElement("button");
+        header.className = "tier-header";
+        header.type = "button";
+        header.setAttribute("aria-expanded", String(!collapsed[tierData.tier]));
+        header.innerHTML = `
+          <span class="tier-index" style="background:${tierData.accent}">${tierData.num}</span>
+          <span class="tier-copy">
+            <h3>${tierData.tier}</h3>
+            <p>${tierData.projects.length} total projects in this tier</p>
+          </span>
+          <span class="tier-summary">${doneCount}/${tierData.projects.length} complete</span>
+          <span class="tier-toggle">▼</span>
+        `;
+        header.addEventListener("click", () => {
+          collapsed[tierData.tier] = !collapsed[tierData.tier];
+          section.classList.toggle("collapsed", collapsed[tierData.tier]);
+          header.setAttribute("aria-expanded", String(!collapsed[tierData.tier]));
+        });
+        section.appendChild(header);
+
+        const cards = document.createElement("div");
+        cards.className = "tier-projects";
+
+        visible.forEach(project => {
+          const status = statuses[project.id];
+          const ss = STATUS_STYLE[status];
+          const cs = CATEGORY_STYLE[project.category];
+          const isDone = status === "Complete";
+          const card = document.createElement("article");
+          card.className = "project-card" + (isDone ? " done" : "");
+
+          card.innerHTML = `
+            <button class="status-badge" data-id="${project.id}" style="background:${ss.bg}; border-color:${ss.border}; color:${ss.color}">
+              <span class="dot" style="background:${ss.color}"></span>
+              ${status}
+            </button>
+            <div class="project-body">
+              <h4 class="project-title">${project.title}</h4>
+              <p class="project-desc">${project.desc}</p>
+              <div class="meta-row">
+                <span class="category-chip" style="background:${cs.bg}; border-color:${cs.border}; color:${cs.color}">${project.category}</span>
+                ${project.tags.map(tag => `<span class="tag">${tag}</span>`).join("")}
+              </div>
+            </div>
+            ${project.link ? `<a class="project-link" href="${project.link}" target="_blank" rel="noopener noreferrer">View Project</a>` : ""}
+          `;
+
+          card.querySelector(".status-badge").addEventListener("click", event => {
+            event.stopPropagation();
+            cycleStatus(Number(event.currentTarget.dataset.id));
+          });
+
+          cards.appendChild(card);
+        });
+
+        section.appendChild(cards);
+        container.appendChild(section);
+      });
+
+      if (!anyVisible) {
+        container.innerHTML = `<div class="empty-state">No projects match the current filters.</div>`;
+      }
+
+      document.querySelectorAll("#filters .toolbar-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.filter === activeFilter);
+      });
+
+      document.querySelectorAll("#category-tabs .toolbar-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.cat === activeCategory);
+      });
+    }
+
+    document.getElementById("filters").addEventListener("click", event => {
+      const btn = event.target.closest(".toolbar-btn");
+      if (!btn) return;
+      activeFilter = btn.dataset.filter;
+      render();
+    });
+
+    document.getElementById("category-tabs").addEventListener("click", event => {
+      const btn = event.target.closest(".toolbar-btn");
+      if (!btn) return;
+      activeCategory = btn.dataset.cat;
+      render();
+    });
+
+    document.getElementById("reset-statuses").addEventListener("click", resetStatuses);
+
+    render();
+  </script>
+</body>
+</html>
